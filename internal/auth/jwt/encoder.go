@@ -8,10 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type RSA256Config interface {
-	PrivateRSAKey() *rsa.PrivateKey
-	PublicRSAKey() *rsa.PublicKey
-}
+
 
 type JwtEncoder struct {
 	privateKey *rsa.PrivateKey

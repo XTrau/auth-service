@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/XTrau/auth-service/internal/database"
+	"github.com/XTrau/auth-service/internal/handlers"
+	"github.com/XTrau/auth-service/internal/repositories"
 )
 
 func Run() error {
@@ -23,8 +25,17 @@ func Run() error {
 		return fmt.Errorf("Ошибка при подключении к Postgres: %w", err)
 	}
 
+	userRepository := repositories.NewPostgresUserRepository(db)
+	authHandlers := handlers.NewAuthHandlers(userRepository)
+
 	// Регистрация хендлеров
 	mux := http.NewServeMux()
+
+	mux.HandleFunc("POST /register", authHandlers.RegisterHandler)
+	mux.HandleFunc("POST /login", authHandlers.LoginHandler)
+	mux.HandleFunc("POST /logout", authHandlers.LogoutHandler)
+	mux.HandleFunc("POST /refresh", authHandlers.RefreshTokensHandler)
+	mux.HandleFunc("GET /user", authHandlers.GetCurrentUserHandler)
 
 	server := http.Server{
 		Addr:    ":8080",

@@ -3,6 +3,7 @@ module github.com/XTrau/auth-service
 go 1.26.4
 
 require (
+	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/jackc/pgx/v5 v5.10.0
 	golang.org/x/crypto v0.54.0

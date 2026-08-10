@@ -10,14 +10,20 @@ import (
 	"syscall"
 	"time"
 
+	authjwt "github.com/XTrau/auth-service/internal/auth/jwt"
+	"github.com/XTrau/auth-service/internal/auth/password"
 	"github.com/XTrau/auth-service/internal/database"
 	"github.com/XTrau/auth-service/internal/handlers"
 	"github.com/XTrau/auth-service/internal/repositories"
+	"github.com/XTrau/auth-service/internal/usecases"
 )
 
 func Run() error {
 	// Конфиг
-	cfg := LoadConfig()
+	cfg, err := LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Ошибка при загрзке конфига: %w", err)
+	}
 
 	// Подключение к бд
 	db, err := database.ConnectPostgres(cfg)
@@ -26,16 +32,23 @@ func Run() error {
 	}
 
 	userRepository := repositories.NewPostgresUserRepository(db)
-	authHandlers := handlers.NewAuthHandlers(userRepository)
+
+	jwtEncoder := authjwt.NewJwtEncoder(cfg)
+	jwtDecoder := authjwt.NewJwtDecoder(cfg)
+	jwtGenerator := authjwt.NewJwtGenerator(jwtEncoder)
+	hasher := password.NewBcryptHasher(10)
+
+	authUseCases := usecases.NewAuthUseCases(jwtGenerator, jwtDecoder, hasher, userRepository)
 
 	// Регистрация хендлеров
 	mux := http.NewServeMux()
+	authHandlers := handlers.NewAuthHandlers(authUseCases)
 
-	mux.HandleFunc("POST /register", authHandlers.RegisterHandler)
-	mux.HandleFunc("POST /login", authHandlers.LoginHandler)
-	mux.HandleFunc("POST /logout", authHandlers.LogoutHandler)
-	mux.HandleFunc("POST /refresh", authHandlers.RefreshTokensHandler)
-	mux.HandleFunc("GET /user", authHandlers.GetCurrentUserHandler)
+	mux.HandleFunc("POST /auth/register", authHandlers.RegisterHandler)
+	mux.HandleFunc("POST /auth/login", authHandlers.LoginHandler)
+	mux.HandleFunc("POST /auth/logout", authHandlers.LogoutHandler)
+	mux.HandleFunc("POST /auth/refresh", authHandlers.RefreshTokensHandler)
+	mux.HandleFunc("GET /auth/user", authHandlers.GetCurrentUserHandler)
 
 	server := http.Server{
 		Addr:    ":8080",

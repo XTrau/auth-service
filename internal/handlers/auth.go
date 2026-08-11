@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/XTrau/auth-service/internal/dto"
 	"github.com/XTrau/auth-service/internal/usecases"
@@ -69,7 +70,7 @@ func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	b, err := json.Marshal(dto.AccessTokenResponse{Token: tokens.Access})
 	if err != nil {
 		slog.Info("ошибка при marshal access token", slog.String("error", err.Error()))
-		http.Error(w, "server error", http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
@@ -88,10 +89,61 @@ func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := r.Cookie(RefreshTokenName)
+	if err == http.ErrNoCookie {
+		http.Error(w, "user not logged in", http.StatusBadRequest)
+		return
+	}
+
+	cookie := &http.Cookie{
+		Name:     RefreshTokenName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0),
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	http.SetCookie(w, cookie)
 }
 
 func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Request) {
+	c, err := r.Cookie(RefreshTokenName)
+	if err == http.ErrNoCookie {
+		http.Error(w, "user not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	tokens, err := ah.authUseCases.Refresh.Execute(c.Value)
+	if err != nil {
+		slog.Info("плохой jwt токен пользователя", slog.String("error", err.Error()))
+		http.Error(w, "user not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	b, err := json.Marshal(dto.AccessTokenResponse{Token: tokens.Access})
+	if err != nil {
+		slog.Info("error on marshal access token", slog.String("error", err.Error()))
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	refreshCookie := http.Cookie{
+		Name:     RefreshTokenName,
+		Value:    tokens.Refresh,
+		MaxAge:   3600 * 24 * 30,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	http.SetCookie(w, &refreshCookie)
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(b)
 }
 
 func (ah *AuthHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
+	
 }

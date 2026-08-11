@@ -10,6 +10,8 @@ import (
 	"github.com/asaskevich/govalidator"
 )
 
+const RefreshTokenName = "refresh"
+
 type AuthHandlers struct {
 	authUseCases *usecases.AuthUseCases
 }
@@ -44,6 +46,45 @@ func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := r.Cookie(RefreshTokenName)
+	if err != http.ErrNoCookie {
+		http.Error(w, "user already logged in", http.StatusBadRequest)
+		return
+	}
+
+	var req dto.LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Info("плохое тело запроса на /login", slog.String("error", err.Error()))
+		http.Error(w, ErrInvalidRequestBody.Error(), http.StatusBadRequest)
+		return
+	}
+
+	tokens, err := ah.authUseCases.Login.Execute(req.Login, req.Password)
+	if err != nil {
+		slog.Info("ошибка при логине пользователя", slog.String("error", err.Error()))
+		http.Error(w, "error on user login", http.StatusBadRequest)
+		return
+	}
+
+	b, err := json.Marshal(dto.AccessTokenResponse{Token: tokens.Access})
+	if err != nil {
+		slog.Info("ошибка при marshal access token", slog.String("error", err.Error()))
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	refreshCookie := http.Cookie{
+		Name:     RefreshTokenName,
+		Value:    tokens.Refresh,
+		MaxAge:   3600 * 24 * 30,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	http.SetCookie(w, &refreshCookie)
+	w.Header().Add("Content-Type", "application/json")
+	w.Write(b)
 }
 
 func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {

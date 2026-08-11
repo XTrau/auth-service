@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/XTrau/auth-service/internal/dto"
@@ -125,7 +126,7 @@ func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Requ
 
 	b, err := json.Marshal(dto.AccessTokenResponse{Token: tokens.Access})
 	if err != nil {
-		slog.Info("error on marshal access token", slog.String("error", err.Error()))
+		slog.Info("ошибка при marshal access token", slog.String("error", err.Error()))
 		http.Error(w, "server error", http.StatusInternalServerError)
 		return
 	}
@@ -145,5 +146,29 @@ func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (ah *AuthHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
-	
+	authHeader := r.Header.Get("Authorization")
+	if !strings.HasPrefix(authHeader, "Bearer ") && len(authHeader) > 7 {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	accessTokenString := authHeader[7:]
+	user, err := ah.authUseCases.User.Execute(accessTokenString)
+
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+
+	userResp := dto.UserDataResponse{
+		Username: user.Username,
+	}
+
+	if err := json.NewEncoder(w).Encode(userResp); err != nil {
+		slog.Info("ошибка при marshal userResp", slog.String("error", err.Error()))
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
 }

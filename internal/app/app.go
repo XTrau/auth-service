@@ -32,13 +32,22 @@ func Run() error {
 	if err != nil {
 		return fmt.Errorf("Ошибка при загрзке конфига: %w", err)
 	}
+	slog.Debug("Конфиг загружен", slog.Any("Config", cfg))
 
 	// Подключение к бд
 	db, err := database.ConnectPostgres(cfg)
 	if err != nil {
 		return fmt.Errorf("Ошибка при подключении к Postgres: %w", err)
 	}
+	slog.Debug("Подключение к базе данных успешно")
 
+	// Миграции
+	if err := RunMigrations(db); err != nil {
+		return fmt.Errorf("Ошибка при загрузке миграций: %w", err)
+	}
+	slog.Info("Миграции загружены")
+
+	// Зависимости
 	userRepository := repositories.NewPostgresUserRepository(db)
 
 	jwtEncoder := authjwt.NewJwtEncoder(cfg)

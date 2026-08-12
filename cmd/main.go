@@ -8,6 +8,6 @@ import (
 
 func main() {
 	if err := app.Run(); err != nil {
-		log.Fatalf("Error on app running: %v", err.Error())
+		log.Fatalf("Ошибка при запуске сервиса: %v", err.Error())
 	}
 }

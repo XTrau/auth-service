@@ -1,0 +1,44 @@
+services:
+  auth-db:
+    image: postgres:16
+    environment:
+      - POSTGRES_DB=auth
+      - POSTGRES_USER=auth
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "auth" ]
+      start_period: 15s
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  auth:
+    build: .
+    environment:
+      DB_HOST: auth-db
+      DB_PORT: 5432
+      DB_USER: auth
+      DB_PASS: password
+      DB_NAME: auth
+
+      PRIVATE_KEY_PATH: /run/secrets/private_key
+      PUBLIC_KEY_PATH: /run/secrets/public_key
+    ports:
+      - 8081:8080
+    secrets:
+      - private_key
+      - public_key
+    depends_on:
+      auth-db:
+        condition: service_healthy
+
+secrets:
+  private_key:
+    file: ./secrets/private.key
+  public_key:
+    file: ./secrets/public.key
+  
+volumes:
+  auth-db-data:

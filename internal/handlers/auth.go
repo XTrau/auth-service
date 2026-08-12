@@ -22,6 +22,15 @@ func NewAuthHandlers(authUseCases *usecases.AuthUseCases) *AuthHandlers {
 	return &AuthHandlers{authUseCases: authUseCases}
 }
 
+// RegisterHandler    godoc
+// @Summary           Регистрация пользователя
+// @Description       Регистрирует пользователя в системе
+// @Description       логиниться в системе нужно отдельно от регистрации
+// @Tags              Аутентификация
+// @Accept            json
+// @Param             userObject body dto.RegisterRequest true "userData"
+// @Success           201
+// @Router            /auth/register [post]
 func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -47,6 +56,18 @@ func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusCreated)
 }
 
+// LoginHandler    godoc
+// @Summary        Логин пользователя
+// @Description    Возвращает access token в body и refresh token в cookie
+// @Description    Для доступа к api нужен access token
+// @Description    Время жизни access token - 15 минут
+// @Description    Время жизни refresh token - 30 дней
+// @Description    Для обновления access token необходимо делать запрос POST /refresh с refresh token в куках
+// @Tags           Аутентификация
+// @Accept         json
+// @Param          userObject body dto.LoginRequest true "userData"
+// @Success        200 {object} handlers.AuthHandlers.LoginHandler.response
+// @Router         /auth/login [post]
 func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := r.Cookie(RefreshTokenName)
 	if err != http.ErrNoCookie {
@@ -89,6 +110,13 @@ func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(b)
 }
 
+// LogoutHandler   godoc
+// @Summary        Разлогинить пользователя
+// @Description    Удаляет refresh token из cookie
+// @Tags           Аутентификация
+// @Accept         json
+// @Success        204
+// @Router         /auth/logout [post]
 func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := r.Cookie(RefreshTokenName)
 	if err == http.ErrNoCookie {
@@ -110,6 +138,13 @@ func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, cookie)
 }
 
+// RefreshTokensHandler godoc
+// @Summary        		Обновить токены
+// @Description    		Возвращает новый access и refresh токены
+// @Description    		Требуется refresh токен в куках
+// @Tags           		Аутентификация
+// @Success        		200
+// @Router         		/auth/refresh [post]
 func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(RefreshTokenName)
 	if err == http.ErrNoCookie {
@@ -145,6 +180,14 @@ func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Requ
 	w.Write(b)
 }
 
+// GetUserHandler godoc
+// @Summary       Получить пользователя
+// @Description   Возвращает данные пользователя по access_token
+// @Tags          Аутентификация
+// @Param 		  Authorization header string true "Example: Bearer "
+// @Success       200   {object} dto.UserDataResponse
+// @Success	 	  401	{string} string "unauthorized user"
+// @Router        /auth/user [get]
 func (ah *AuthHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 	if !strings.HasPrefix(authHeader, "Bearer ") && len(authHeader) > 7 {

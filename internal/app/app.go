@@ -16,8 +16,16 @@ import (
 	"github.com/XTrau/auth-service/internal/handlers"
 	"github.com/XTrau/auth-service/internal/repositories"
 	"github.com/XTrau/auth-service/internal/usecases"
+
+	_ "github.com/XTrau/auth-service/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
+// @title       Swagger auth-api
+// @version     1.0
+// @description Authorization API.
+// @BasePath    /
 func Run() error {
 	// Конфиг
 	cfg, err := LoadConfig()
@@ -50,13 +58,17 @@ func Run() error {
 	mux.HandleFunc("POST /auth/refresh", authHandlers.RefreshTokensHandler)
 	mux.HandleFunc("GET /auth/user", authHandlers.GetCurrentUserHandler)
 
+	mux.HandleFunc("GET /swagger/", httpSwagger.WrapHandler)
+
+	serverAddr := ":8080"
 	server := http.Server{
-		Addr:    ":8080",
+		Addr:    serverAddr,
 		Handler: mux,
 	}
 
 	// Запуск сервера
 	go func() {
+		slog.Info("Сервер запущен", slog.String("address", serverAddr))
 		if err := server.ListenAndServe(); err != nil {
 			slog.Error("Ошибка при работе сервера", slog.String("error", err.Error()))
 		}

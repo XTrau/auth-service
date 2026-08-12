@@ -2,9 +2,11 @@ package app
 
 import (
 	"crypto/rsa"
+	"log/slog"
 	"os"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -28,6 +30,10 @@ func (c *Config) PrivateRSAKey() *rsa.PrivateKey { return c.privateRSAKey }
 func (c *Config) PublicRSAKey() *rsa.PublicKey   { return c.publicRSAKey }
 
 func LoadConfig() (*Config, error) {
+	if err := godotenv.Load(); err != nil {
+		slog.Info(".env не найден, используются системные переменные окружения")
+	}
+
 	privateKeyPath := os.Getenv("PRIVATE_KEY_PATH")
 	publicKeyPath := os.Getenv("PUBLIC_KEY_PATH")
 

@@ -127,7 +127,7 @@ func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	cookie := &http.Cookie{
 		Name:     RefreshTokenName,
 		Value:    "",
-		Path:     "/",
+		Path:     "/auth",
 		MaxAge:   -1,
 		Expires:  time.Unix(0, 0),
 		HttpOnly: true,

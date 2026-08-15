@@ -1,5 +1,5 @@
 definitions:
-  github_com_XTrau_auth-service_internal_dto.LoginRequest:
+  dto.LoginRequest:
     properties:
       login:
         maxLength: 64
@@ -10,7 +10,7 @@ definitions:
         minLength: 8
         type: string
     type: object
-  github_com_XTrau_auth-service_internal_dto.RegisterRequest:
+  dto.RegisterRequest:
     properties:
       password:
         maxLength: 64
@@ -21,12 +21,12 @@ definitions:
         minLength: 8
         type: string
     type: object
-  github_com_XTrau_auth-service_internal_dto.UserDataResponse:
+  dto.UserDataResponse:
     properties:
       username:
         type: string
     type: object
-  internal_handlers.AuthHandlers:
+  handlers.AuthHandlers:
     type: object
 info:
   contact: {}
@@ -47,12 +47,12 @@ paths:
         name: userObject
         required: true
         schema:
-          $ref: '#/definitions/github_com_XTrau_auth-service_internal_dto.LoginRequest'
+          $ref: '#/definitions/dto.LoginRequest'
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handlers.AuthHandlers'
+            $ref: '#/definitions/handlers.AuthHandlers'
       summary: Логин пользователя
       tags:
       - Аутентификация
@@ -91,7 +91,7 @@ paths:
         name: userObject
         required: true
         schema:
-          $ref: '#/definitions/github_com_XTrau_auth-service_internal_dto.RegisterRequest'
+          $ref: '#/definitions/dto.RegisterRequest'
       responses:
         "201":
           description: Created
@@ -102,7 +102,7 @@ paths:
     get:
       description: Возвращает данные пользователя по access_token
       parameters:
-      - description: 'Example: Bearer '
+      - description: 'Example: Bearer {token}'
         in: header
         name: Authorization
         required: true
@@ -111,7 +111,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/github_com_XTrau_auth-service_internal_dto.UserDataResponse'
+            $ref: '#/definitions/dto.UserDataResponse'
         "401":
           description: unauthorized user
           schema:

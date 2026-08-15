@@ -21,7 +21,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_XTrau_auth-service_internal_dto.LoginRequest"
+                            "$ref": "#/definitions/dto.LoginRequest"
                         }
                     }
                 ],
@@ -29,7 +29,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthHandlers"
+                            "$ref": "#/definitions/handlers.AuthHandlers"
                         }
                     }
                 }
@@ -83,7 +83,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_XTrau_auth-service_internal_dto.RegisterRequest"
+                            "$ref": "#/definitions/dto.RegisterRequest"
                         }
                     }
                 ],
@@ -104,7 +104,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Example: Bearer ",
+                        "description": "Example: Bearer {token}",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -114,7 +114,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_XTrau_auth-service_internal_dto.UserDataResponse"
+                            "$ref": "#/definitions/dto.UserDataResponse"
                         }
                     },
                     "401": {
@@ -128,7 +128,7 @@
         }
     },
     "definitions": {
-        "github_com_XTrau_auth-service_internal_dto.LoginRequest": {
+        "dto.LoginRequest": {
             "type": "object",
             "properties": {
                 "login": {
@@ -143,7 +143,7 @@
                 }
             }
         },
-        "github_com_XTrau_auth-service_internal_dto.RegisterRequest": {
+        "dto.RegisterRequest": {
             "type": "object",
             "properties": {
                 "password": {
@@ -158,7 +158,7 @@
                 }
             }
         },
-        "github_com_XTrau_auth-service_internal_dto.UserDataResponse": {
+        "dto.UserDataResponse": {
             "type": "object",
             "properties": {
                 "username": {
@@ -166,7 +166,7 @@
                 }
             }
         },
-        "internal_handlers.AuthHandlers": {
+        "handlers.AuthHandlers": {
             "type": "object"
         }
     }

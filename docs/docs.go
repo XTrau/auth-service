@@ -32,7 +32,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_XTrau_auth-service_internal_dto.LoginRequest"
+                            "$ref": "#/definitions/dto.LoginRequest"
                         }
                     }
                 ],
@@ -40,7 +40,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_handlers.AuthHandlers"
+                            "$ref": "#/definitions/handlers.AuthHandlers"
                         }
                     }
                 }
@@ -94,7 +94,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/github_com_XTrau_auth-service_internal_dto.RegisterRequest"
+                            "$ref": "#/definitions/dto.RegisterRequest"
                         }
                     }
                 ],
@@ -115,7 +115,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Example: Bearer ",
+                        "description": "Example: Bearer {token}",
                         "name": "Authorization",
                         "in": "header",
                         "required": true
@@ -125,7 +125,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/github_com_XTrau_auth-service_internal_dto.UserDataResponse"
+                            "$ref": "#/definitions/dto.UserDataResponse"
                         }
                     },
                     "401": {
@@ -139,7 +139,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "github_com_XTrau_auth-service_internal_dto.LoginRequest": {
+        "dto.LoginRequest": {
             "type": "object",
             "properties": {
                 "login": {
@@ -154,7 +154,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_XTrau_auth-service_internal_dto.RegisterRequest": {
+        "dto.RegisterRequest": {
             "type": "object",
             "properties": {
                 "password": {
@@ -169,7 +169,7 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_XTrau_auth-service_internal_dto.UserDataResponse": {
+        "dto.UserDataResponse": {
             "type": "object",
             "properties": {
                 "username": {
@@ -177,7 +177,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handlers.AuthHandlers": {
+        "handlers.AuthHandlers": {
             "type": "object"
         }
     }

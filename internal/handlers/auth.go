@@ -196,7 +196,7 @@ func (ah *AuthHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	accessTokenString := authHeader[7:]
+	accessTokenString := strings.TrimPrefix(authHeader, "Bearer ")
 	user, err := ah.authUseCases.User.Execute(accessTokenString)
 
 	if err != nil {

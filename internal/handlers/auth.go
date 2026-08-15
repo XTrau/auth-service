@@ -136,6 +136,7 @@ func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, cookie)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // RefreshTokensHandler godoc
@@ -184,7 +185,7 @@ func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Requ
 // @Summary       Получить пользователя
 // @Description   Возвращает данные пользователя по access_token
 // @Tags          Аутентификация
-// @Param 		  Authorization header string true "Example: Bearer "
+// @Param 		  Authorization header string true "Example: Bearer {token}"
 // @Success       200   {object} dto.UserDataResponse
 // @Success	 	  401	{string} string "unauthorized user"
 // @Router        /auth/user [get]

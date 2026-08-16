@@ -29,6 +29,30 @@ func (c *Config) DBName() string { return c.dbName }
 func (c *Config) PrivateRSAKey() *rsa.PrivateKey { return c.privateRSAKey }
 func (c *Config) PublicRSAKey() *rsa.PublicKey   { return c.publicRSAKey }
 
+func LoadRSAPrivateKeyFromDisk(location string) *rsa.PrivateKey {
+	keyData, e := os.ReadFile(location)
+	if e != nil {
+		panic(e.Error())
+	}
+	key, e := jwt.ParseRSAPrivateKeyFromPEM(keyData)
+	if e != nil {
+		panic(e.Error())
+	}
+	return key
+}
+
+func LoadRSAPublicKeyFromDisk(location string) *rsa.PublicKey {
+	keyData, e := os.ReadFile(location)
+	if e != nil {
+		panic(e.Error())
+	}
+	key, e := jwt.ParseRSAPublicKeyFromPEM(keyData)
+	if e != nil {
+		panic(e.Error())
+	}
+	return key
+}
+
 func LoadConfig() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		slog.Info(".env не найден, используются системные переменные окружения")
@@ -37,26 +61,6 @@ func LoadConfig() (*Config, error) {
 	privateKeyPath := os.Getenv("PRIVATE_KEY_PATH")
 	publicKeyPath := os.Getenv("PUBLIC_KEY_PATH")
 
-	privateKeyBytes, err := os.ReadFile(privateKeyPath)
-	if err != nil {
-		return nil, err
-	}
-
-	privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(privateKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	publicKeyBytes, err := os.ReadFile(publicKeyPath)
-	if err != nil {
-		return nil, err
-	}
-
-	publicKey, err := jwt.ParseRSAPublicKeyFromPEM(publicKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Config{
 		dbUser: os.Getenv("DB_USER"),
 		dbPass: os.Getenv("DB_PASS"),
@@ -64,7 +68,7 @@ func LoadConfig() (*Config, error) {
 		dbPort: os.Getenv("DB_PORT"),
 		dbName: os.Getenv("DB_NAME"),
 
-		privateRSAKey: privateKey,
-		publicRSAKey:  publicKey,
+		privateRSAKey: LoadRSAPrivateKeyFromDisk(privateKeyPath),
+		publicRSAKey:  LoadRSAPublicKeyFromDisk(publicKeyPath),
 	}, nil
 }

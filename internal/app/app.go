@@ -53,7 +53,7 @@ func Run() error {
 	jwtEncoder := authjwt.NewJwtEncoder(cfg)
 	jwtDecoder := authjwt.NewJwtDecoder(cfg)
 	jwtGenerator := authjwt.NewJwtGenerator(jwtEncoder)
-	hasher := password.NewBcryptHasher(10)
+	hasher := password.NewArgon2Hasher(password.Argon2DefaultParams())
 
 	authUseCases := usecases.NewAuthUseCases(jwtGenerator, jwtDecoder, hasher, userRepository)
 

@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/XTrau/auth-service/internal/domain"
 	"github.com/XTrau/auth-service/internal/dto"
 	"github.com/XTrau/auth-service/internal/usecases"
 	"github.com/asaskevich/govalidator"
@@ -46,8 +48,15 @@ func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	user, err := ah.authUseCases.Register.Execute(r.Context(), req.Username, req.Password)
+
+	if errors.Is(err, domain.ErrUsernameAlreadyExists) {
+		slog.Info("попытка зарегистрировать существующего пользователя", slog.String("error", err.Error()))
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+
 	if err != nil {
-		slog.Info("ошибка при регистрации пользователя", slog.String("error", err.Error()))
+		slog.Error("ошибка при регистрации пользователя", slog.String("error", err.Error()))
 		http.Error(w, "Error on register user", http.StatusInternalServerError)
 		return
 	}
@@ -77,9 +86,14 @@ func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tokens, err := ah.authUseCases.Login.Execute(r.Context(), req.Login, req.Password)
+	if errors.Is(err, domain.ErrUserNotFound) || errors.Is(err, domain.ErrInvalidPassword) {
+		http.Error(w, "incorrect username or password", http.StatusBadRequest)
+		return
+	}
+
 	if err != nil {
-		slog.Info("ошибка при логине пользователя", slog.String("error", err.Error()))
-		http.Error(w, "error on user login", http.StatusBadRequest)
+		slog.Error("ошибка при логине пользователя", slog.String("error", err.Error()))
+		http.Error(w, "error on user login", http.StatusInternalServerError)
 		return
 	}
 

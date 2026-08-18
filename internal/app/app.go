@@ -32,7 +32,6 @@ func Run() error {
 	if err != nil {
 		return fmt.Errorf("Ошибка при загрзке конфига: %w", err)
 	}
-	slog.Debug("Конфиг загружен", slog.Any("Config", cfg))
 
 	// Подключение к бд
 	db, err := database.ConnectPostgres(cfg)

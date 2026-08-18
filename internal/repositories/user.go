@@ -16,10 +16,7 @@ func NewPostgresUserRepository(db *sql.DB) *PostgresUserRepository {
 }
 
 func (repo *PostgresUserRepository) Create(username string, passwordHash string) (*domain.User, error) {
-	slog.Info("Создание пользователя в базе данных",
-		slog.String("username", username),
-		slog.String("password_hash", passwordHash),
-	)
+	slog.Info("Создание пользователя в базе данных", slog.String("username", username))
 	query := "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id"
 
 	var id int

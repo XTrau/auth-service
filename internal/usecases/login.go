@@ -27,12 +27,8 @@ func (uc *LoginUseCase) Execute(ctx context.Context, username, password string) 
 		return domain.TokenPair{}, err
 	}
 
-	if user == nil {
-		return domain.TokenPair{}, ErrUserNotFound
-	}
-
 	if !uc.passwordHasher.Compare(user.PasswordHash, password) {
-		return domain.TokenPair{}, ErrInvalidPassword
+		return domain.TokenPair{}, domain.ErrInvalidPassword
 	}
 
 	payload := domain.TokenPayload{

@@ -43,7 +43,7 @@ func (repo *PostgresUserRepository) GetByID(ctx context.Context, id domain.UserI
 	err := repo.db.QueryRowContext(ctx, query, id).Scan(&username, &password)
 
 	if err == sql.ErrNoRows {
-		return nil, nil
+		return nil, domain.ErrUserNotFound
 	}
 
 	if err != nil {
@@ -68,7 +68,7 @@ func (repo *PostgresUserRepository) GetByUsername(ctx context.Context, username 
 	err := repo.db.QueryRowContext(ctx, query, username).Scan(&id, &password)
 
 	if err == sql.ErrNoRows {
-		return nil, nil
+		return nil, domain.ErrUserNotFound
 	}
 
 	if err != nil {

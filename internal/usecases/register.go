@@ -25,7 +25,7 @@ func (uc *RegisterUseCase) Execute(ctx context.Context, username string, passwor
 	}
 
 	if user != nil {
-		return nil, ErrUsernameAlreadyExists
+		return nil, domain.ErrUsernameAlreadyExists
 	}
 
 	passwordHash, err := uc.passwordHasher.Hash(password)

@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"context"
+	"errors"
 
 	"github.com/XTrau/auth-service/internal/domain"
 )
@@ -20,12 +21,8 @@ func NewRegisterUseCase(hasher domain.Hasher, userRepository domain.UserReposito
 
 func (uc *RegisterUseCase) Execute(ctx context.Context, username string, password string) (*domain.User, error) {
 	user, err := uc.userRepository.GetByUsername(ctx, username)
-	if err != nil {
+	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
 		return nil, err
-	}
-
-	if user != nil {
-		return nil, domain.ErrUsernameAlreadyExists
 	}
 
 	passwordHash, err := uc.passwordHasher.Hash(password)

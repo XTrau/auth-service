@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -34,6 +35,10 @@ func ConnectPostgres(cfg DBConfig) (*sql.DB, error) {
 	}
 
 	db.SetMaxOpenConns(50)
+	db.SetMaxIdleConns(25)
+
+	db.SetConnMaxIdleTime(time.Minute * 5)
+	db.SetConnMaxLifetime(time.Minute * 15)
 
 	return db, nil
 }

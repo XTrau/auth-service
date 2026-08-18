@@ -37,8 +37,10 @@ func Run() error {
 	db, err := database.ConnectPostgres(cfg)
 	if err != nil {
 		return fmt.Errorf("Ошибка при подключении к Postgres: %w", err)
+	} else {
+		slog.Debug("Подключение к базе данных успешно")
 	}
-	slog.Debug("Подключение к базе данных успешно")
+	defer db.Close()
 
 	// Миграции
 	if err := RunMigrations(db); err != nil {

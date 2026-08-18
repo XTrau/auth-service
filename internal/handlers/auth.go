@@ -69,12 +69,6 @@ func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 // @Success        200 {object} handlers.AuthHandlers.LoginHandler.response
 // @Router         /auth/login [post]
 func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := r.Cookie(RefreshTokenName)
-	if err != http.ErrNoCookie {
-		http.Error(w, "user already logged in", http.StatusBadRequest)
-		return
-	}
-
 	var req dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		slog.Info("плохое тело запроса на /login", slog.String("error", err.Error()))
@@ -99,6 +93,7 @@ func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	refreshCookie := http.Cookie{
 		Name:     RefreshTokenName,
 		Value:    tokens.Refresh,
+		Path:     "/auth",
 		MaxAge:   3600 * 24 * 30,
 		HttpOnly: true,
 		Secure:   true,
@@ -208,11 +203,10 @@ func (ah *AuthHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Req
 		Username: user.Username,
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(userResp); err != nil {
 		slog.Info("ошибка при marshal userResp", slog.String("error", err.Error()))
 		http.Error(w, "server error", http.StatusInternalServerError)
 		return
 	}
-
-	w.Header().Add("Content-Type", "application/json")
 }

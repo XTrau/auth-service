@@ -42,7 +42,7 @@ func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if ok, err := govalidator.ValidateStruct(req); !ok || err != nil {
-		slog.Info("ошибка при валидации тела /register", slog.Any("тело", req), slog.String("error", err.Error()))
+		slog.Info("ошибка при валидации тела /register", slog.Any("username", req.Username), slog.String("error", err.Error()))
 		http.Error(w, ErrInvalidRequestBody.Error(), http.StatusBadRequest)
 		return
 	}
@@ -61,7 +61,10 @@ func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	slog.Info("зарегистрирован пользователь", slog.Any("User", user))
+	slog.Info("зарегистрирован пользователь",
+		slog.Int64("ID", int64(user.ID)),
+		slog.String("username", user.Username),
+	)
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -179,6 +182,7 @@ func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Requ
 	refreshCookie := http.Cookie{
 		Name:     RefreshTokenName,
 		Value:    tokens.Refresh,
+		Path:     "/auth",
 		MaxAge:   3600 * 24 * 30,
 		HttpOnly: true,
 		Secure:   true,

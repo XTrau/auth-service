@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"strconv"
 )
 
@@ -22,7 +23,7 @@ type User struct {
 }
 
 type UserRepository interface {
-	Create(username string, passwordHash string) (*User, error)
-	GetByID(id UserID) (*User, error)
-	GetByUsername(username string) (*User, error)
+	Create(ctx context.Context, username string, passwordHash string) (*User, error)
+	GetByID(ctx context.Context, id UserID) (*User, error)
+	GetByUsername(ctx context.Context, username string) (*User, error)
 }

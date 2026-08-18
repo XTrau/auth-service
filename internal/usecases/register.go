@@ -1,6 +1,10 @@
 package usecases
 
-import "github.com/XTrau/auth-service/internal/domain"
+import (
+	"context"
+
+	"github.com/XTrau/auth-service/internal/domain"
+)
 
 type RegisterUseCase struct {
 	passwordHasher domain.Hasher
@@ -14,8 +18,8 @@ func NewRegisterUseCase(hasher domain.Hasher, userRepository domain.UserReposito
 	}
 }
 
-func (uc *RegisterUseCase) Execute(username string, password string) (*domain.User, error) {
-	user, err := uc.userRepository.GetByUsername(username)
+func (uc *RegisterUseCase) Execute(ctx context.Context, username string, password string) (*domain.User, error) {
+	user, err := uc.userRepository.GetByUsername(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +34,7 @@ func (uc *RegisterUseCase) Execute(username string, password string) (*domain.Us
 		return nil, err
 	}
 
-	user, err = uc.userRepository.Create(username, passwordHash)
+	user, err = uc.userRepository.Create(ctx, username, passwordHash)
 
 	if err != nil {
 		return nil, err

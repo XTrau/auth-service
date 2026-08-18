@@ -1,6 +1,8 @@
 package usecases
 
 import (
+	"context"
+
 	authjwt "github.com/XTrau/auth-service/internal/auth/jwt"
 	"github.com/XTrau/auth-service/internal/domain"
 )
@@ -17,11 +19,11 @@ func NewGetUserUseCase(decoder domain.TokenDecoder, userRepository domain.UserRe
 	}
 }
 
-func (uc *GetUserUseCase) Execute(accessToken string) (*domain.User, error) {
+func (uc *GetUserUseCase) Execute(ctx context.Context, accessToken string) (*domain.User, error) {
 	payload, err := uc.tokenDecoder.Decode(accessToken, authjwt.AccessType)
 	if err != nil {
 		return nil, err
 	}
 
-	return uc.userRepository.GetByID(payload.Subject)
+	return uc.userRepository.GetByID(ctx, payload.Subject)
 }

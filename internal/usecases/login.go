@@ -1,6 +1,8 @@
 package usecases
 
 import (
+	"context"
+
 	"github.com/XTrau/auth-service/internal/domain"
 )
 
@@ -18,8 +20,8 @@ func NewLoginUseCase(generator domain.TokenGenerator, hasher domain.Hasher, user
 	}
 }
 
-func (uc *LoginUseCase) Execute(username, password string) (domain.TokenPair, error) {
-	user, err := uc.userRepository.GetByUsername(username)
+func (uc *LoginUseCase) Execute(ctx context.Context, username, password string) (domain.TokenPair, error) {
+	user, err := uc.userRepository.GetByUsername(ctx, username)
 
 	if err != nil {
 		return domain.TokenPair{}, err

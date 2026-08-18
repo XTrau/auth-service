@@ -45,7 +45,7 @@ func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := ah.authUseCases.Register.Execute(req.Username, req.Password)
+	user, err := ah.authUseCases.Register.Execute(r.Context(), req.Username, req.Password)
 	if err != nil {
 		slog.Info("ошибка при регистрации пользователя", slog.String("error", err.Error()))
 		http.Error(w, "Error on register user", http.StatusInternalServerError)
@@ -82,7 +82,7 @@ func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokens, err := ah.authUseCases.Login.Execute(req.Login, req.Password)
+	tokens, err := ah.authUseCases.Login.Execute(r.Context(), req.Login, req.Password)
 	if err != nil {
 		slog.Info("ошибка при логине пользователя", slog.String("error", err.Error()))
 		http.Error(w, "error on user login", http.StatusBadRequest)
@@ -197,7 +197,7 @@ func (ah *AuthHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	accessTokenString := strings.TrimPrefix(authHeader, "Bearer ")
-	user, err := ah.authUseCases.User.Execute(accessTokenString)
+	user, err := ah.authUseCases.User.Execute(r.Context(), accessTokenString)
 
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)

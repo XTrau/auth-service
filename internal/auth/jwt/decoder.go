@@ -57,8 +57,9 @@ func (jd *JwtDecoder) Decode(tokenString string, tokenType string) (domain.Token
 	}
 
 	result := domain.TokenPayload{
-		Subject:  domain.UserID(userID),
-		Username: claims.Username,
+		Subject:   domain.UserID(userID),
+		Username:  claims.Username,
+		ExpiresAt: claims.ExpiresAt.Time,
 	}
 
 	return result, nil

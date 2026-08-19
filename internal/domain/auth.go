@@ -10,8 +10,9 @@ type Hasher interface {
 }
 
 type TokenPayload struct {
-	Subject  UserID `json:"id"`
-	Username string `json:"username"`
+	Subject   UserID `json:"id"`
+	Username  string `json:"username"`
+	ExpiresAt time.Time
 }
 
 type TokenPair struct {

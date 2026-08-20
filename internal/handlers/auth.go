@@ -166,16 +166,13 @@ func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Создаем новую пару токенов
-	tokens, err := ah.authUseCases.Refresh.Execute(c.Value)
+	// Создаем новую пару токенов и блокируем старый
+	tokens, err := ah.authUseCases.Refresh.Execute(r.Context(), c.Value)
 	if err != nil {
 		slog.Info("плохой jwt токен пользователя", slog.String("error", err.Error()))
 		http.Error(w, "user not logged in", http.StatusUnauthorized)
 		return
 	}
-
-	// Блокируем старый токен
-	ah.authUseCases.TokenBlock.Execute(r.Context(), c.Value)
 
 	b, err := json.Marshal(dto.AccessTokenResponse{Token: tokens.Access})
 	if err != nil {

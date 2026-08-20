@@ -14,7 +14,7 @@ import (
 	"github.com/XTrau/auth-service/internal/auth/password"
 	"github.com/XTrau/auth-service/internal/database"
 	"github.com/XTrau/auth-service/internal/handlers"
-	"github.com/XTrau/auth-service/internal/repositories"
+	"github.com/XTrau/auth-service/internal/uow"
 	"github.com/XTrau/auth-service/internal/usecases"
 
 	_ "github.com/XTrau/auth-service/docs"
@@ -49,15 +49,14 @@ func Run() error {
 	slog.Info("Миграции загружены")
 
 	// Зависимости
-	userRepository := repositories.NewPostgresUserRepository(db)
-	blockedTokensRepository := repositories.NewPostgresBlockedTokensRepository(db)
+	unitOfWork := uow.NewPostgresUnitOfWork(db)
 
 	jwtEncoder := authjwt.NewJwtEncoder(cfg)
 	jwtDecoder := authjwt.NewJwtDecoder(cfg)
 	jwtGenerator := authjwt.NewJwtGenerator(jwtEncoder)
 	hasher := password.NewArgon2Hasher(password.Argon2DefaultParams())
 
-	authUseCases := usecases.NewAuthUseCases(jwtGenerator, jwtDecoder, hasher, userRepository, blockedTokensRepository)
+	authUseCases := usecases.NewAuthUseCases(jwtGenerator, jwtDecoder, hasher, unitOfWork)
 
 	// Регистрация хендлеров
 	mux := http.NewServeMux()

@@ -9,11 +9,11 @@ import (
 )
 
 type PostgresUserRepository struct {
-	db *sql.DB
+	tx *sql.Tx
 }
 
-func NewPostgresUserRepository(db *sql.DB) *PostgresUserRepository {
-	return &PostgresUserRepository{db}
+func NewPostgresUserRepository(tx *sql.Tx) *PostgresUserRepository {
+	return &PostgresUserRepository{tx}
 }
 
 func (repo *PostgresUserRepository) Create(ctx context.Context, username string, passwordHash string) (*domain.User, error) {
@@ -21,7 +21,7 @@ func (repo *PostgresUserRepository) Create(ctx context.Context, username string,
 	query := "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id"
 
 	var id int
-	err := repo.db.QueryRowContext(ctx, query, username, passwordHash).Scan(&id)
+	err := repo.tx.QueryRowContext(ctx, query, username, passwordHash).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (repo *PostgresUserRepository) GetByID(ctx context.Context, id domain.UserI
 	query := "SELECT username, password_hash FROM users WHERE id=$1"
 
 	var username, password string
-	err := repo.db.QueryRowContext(ctx, query, id).Scan(&username, &password)
+	err := repo.tx.QueryRowContext(ctx, query, id).Scan(&username, &password)
 
 	if err == sql.ErrNoRows {
 		return nil, domain.ErrUserNotFound
@@ -65,7 +65,7 @@ func (repo *PostgresUserRepository) GetByUsername(ctx context.Context, username 
 
 	var id int64
 	var password string
-	err := repo.db.QueryRowContext(ctx, query, username).Scan(&id, &password)
+	err := repo.tx.QueryRowContext(ctx, query, username).Scan(&id, &password)
 
 	if err == sql.ErrNoRows {
 		return nil, domain.ErrUserNotFound

@@ -8,29 +8,33 @@ import (
 )
 
 type BlockTokenUseCase struct {
-	blockedTokensRepository domain.BlockedTokensRepository
-	decoder                 domain.TokenDecoder
+	decoder    domain.TokenDecoder
+	unitOfWork domain.UnitOfWork
 }
 
-func NewBlockTokenUseCase(blockedTokensRepository domain.BlockedTokensRepository, decoder domain.TokenDecoder) *BlockTokenUseCase {
+func NewBlockTokenUseCase(decoder domain.TokenDecoder, unitOfWork domain.UnitOfWork) *BlockTokenUseCase {
 	return &BlockTokenUseCase{
-		blockedTokensRepository: blockedTokensRepository,
-		decoder:                 decoder,
+		decoder:    decoder,
+		unitOfWork: unitOfWork,
 	}
 }
 
 func (uc *BlockTokenUseCase) Execute(ctx context.Context, refreshTokenString string) error {
-	// декодировать токен (получить expires_at)
-	payload, err := uc.decoder.Decode(refreshTokenString, authjwt.RefreshType)
-	if err != nil {
-		return err
-	}
+	err := uc.unitOfWork.Execute(ctx, func(ctx context.Context, repos domain.Repositories) error {
+		// декодировать токен (получить expires_at)
+		payload, err := uc.decoder.Decode(refreshTokenString, authjwt.RefreshType)
+		if err != nil {
+			return err
+		}
 
-	// сохранить в заблокированные
-	err = uc.blockedTokensRepository.Create(ctx, refreshTokenString, payload.ExpiresAt.UTC())
-	if err != nil {
-		return err
-	}
+		// сохранить в заблокированные
+		err = repos.BlockedTokens().Create(ctx, refreshTokenString, payload.ExpiresAt.UTC())
+		if err != nil {
+			return err
+		}
 
-	return nil
+		return nil
+	})
+
+	return err
 }

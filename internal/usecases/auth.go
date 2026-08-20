@@ -1,6 +1,8 @@
 package usecases
 
-import "github.com/XTrau/auth-service/internal/domain"
+import (
+	"github.com/XTrau/auth-service/internal/domain"
+)
 
 type AuthUseCases struct {
 	Register   *RegisterUseCase
@@ -14,14 +16,13 @@ func NewAuthUseCases(
 	generator domain.TokenGenerator,
 	decoder domain.TokenDecoder,
 	hasher domain.Hasher,
-	userRepository domain.UserRepository,
-	blockedTokensRepository domain.BlockedTokensRepository,
+	unitOfWork domain.UnitOfWork,
 ) *AuthUseCases {
 	return &AuthUseCases{
-		Register:   NewRegisterUseCase(hasher, userRepository),
-		Login:      NewLoginUseCase(generator, hasher, userRepository),
-		TokenBlock: NewBlockTokenUseCase(blockedTokensRepository, decoder),
-		Refresh:    NewRefreshUseCase(generator, decoder),
-		User:       NewGetUserUseCase(decoder, userRepository),
+		Register:   NewRegisterUseCase(hasher, unitOfWork),
+		Login:      NewLoginUseCase(generator, hasher, unitOfWork),
+		TokenBlock: NewBlockTokenUseCase(decoder, unitOfWork),
+		Refresh:    NewRefreshUseCase(generator, decoder, unitOfWork),
+		User:       NewGetUserUseCase(decoder, unitOfWork),
 	}
 }

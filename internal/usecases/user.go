@@ -8,22 +8,33 @@ import (
 )
 
 type GetUserUseCase struct {
-	tokenDecoder   domain.TokenDecoder
-	userRepository domain.UserRepository
+	tokenDecoder domain.TokenDecoder
+	unitOfWork   domain.UnitOfWork
 }
 
-func NewGetUserUseCase(decoder domain.TokenDecoder, userRepository domain.UserRepository) *GetUserUseCase {
+func NewGetUserUseCase(decoder domain.TokenDecoder, unitOfWork domain.UnitOfWork) *GetUserUseCase {
 	return &GetUserUseCase{
-		tokenDecoder:   decoder,
-		userRepository: userRepository,
+		tokenDecoder: decoder,
+		unitOfWork:   unitOfWork,
 	}
 }
 
-func (uc *GetUserUseCase) Execute(ctx context.Context, accessToken string) (*domain.User, error) {
-	payload, err := uc.tokenDecoder.Decode(accessToken, authjwt.AccessType)
-	if err != nil {
-		return nil, err
-	}
+func (uc *GetUserUseCase) Execute(ctx context.Context, accessToken string) (user *domain.User, err error) {
+	err = uc.unitOfWork.Execute(ctx, func(ctx context.Context, repos domain.Repositories) error {
+		// Достаем user id из токена
+		payload, err := uc.tokenDecoder.Decode(accessToken, authjwt.AccessType)
+		if err != nil {
+			return err
+		}
 
-	return uc.userRepository.GetByID(ctx, payload.Subject)
+		// Находим пользователя по id
+		user, err = repos.Users().GetByID(ctx, payload.Subject)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return user, err
 }

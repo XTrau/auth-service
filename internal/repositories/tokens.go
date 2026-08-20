@@ -7,17 +7,17 @@ import (
 )
 
 type PostgresBlockedTokensRepository struct {
-	db *sql.DB
+	tx *sql.Tx
 }
 
-func NewPostgresBlockedTokensRepository(db *sql.DB) *PostgresBlockedTokensRepository {
-	return &PostgresBlockedTokensRepository{db}
+func NewPostgresBlockedTokensRepository(tx *sql.Tx) *PostgresBlockedTokensRepository {
+	return &PostgresBlockedTokensRepository{tx}
 }
 
 func (repo *PostgresBlockedTokensRepository) Create(ctx context.Context, tokenString string, expiresAt time.Time) error {
 	query := "INSERT INTO blocked_tokens (token, expires_at) VALUES ($1, $2)"
 
-	_, err := repo.db.ExecContext(ctx, query, tokenString, expiresAt)
+	_, err := repo.tx.ExecContext(ctx, query, tokenString, expiresAt)
 
 	if err != nil {
 		return err
@@ -31,7 +31,7 @@ func (repo *PostgresBlockedTokensRepository) Find(ctx context.Context, tokenStri
 
 	var found bool
 
-	if err := repo.db.QueryRowContext(ctx, query, tokenString).Scan(&found); err != nil {
+	if err := repo.tx.QueryRowContext(ctx, query, tokenString).Scan(&found); err != nil {
 		return false, err
 	}
 

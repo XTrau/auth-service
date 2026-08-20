@@ -9,33 +9,40 @@ import (
 
 type RegisterUseCase struct {
 	passwordHasher domain.Hasher
-	userRepository domain.UserRepository
+	unitOfWork     domain.UnitOfWork
 }
 
-func NewRegisterUseCase(hasher domain.Hasher, userRepository domain.UserRepository) *RegisterUseCase {
+func NewRegisterUseCase(hasher domain.Hasher, unitOfWork domain.UnitOfWork) *RegisterUseCase {
 	return &RegisterUseCase{
 		passwordHasher: hasher,
-		userRepository: userRepository,
+		unitOfWork:     unitOfWork,
 	}
 }
 
-func (uc *RegisterUseCase) Execute(ctx context.Context, username string, password string) (*domain.User, error) {
-	user, err := uc.userRepository.GetByUsername(ctx, username)
-	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
-		return nil, err
-	}
+func (uc *RegisterUseCase) Execute(ctx context.Context, username string, password string) (user *domain.User, err error) {
+	err = uc.unitOfWork.Execute(ctx, func(ctx context.Context, repos domain.Repositories) error {
+		// Проверим существует ли пользователь с таким username
+		_, err := repos.Users().GetByUsername(ctx, username)
+		if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
+			return err
+		}
 
-	passwordHash, err := uc.passwordHasher.Hash(password)
+		// Хешируем пароль
+		passwordHash, err := uc.passwordHasher.Hash(password)
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return err
+		}
 
-	user, err = uc.userRepository.Create(ctx, username, passwordHash)
+		// Создаем пользователя
+		user, err = repos.Users().Create(ctx, username, passwordHash)
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return err
+		}
 
-	return user, nil
+		return nil
+	})
+
+	return user, err
 }

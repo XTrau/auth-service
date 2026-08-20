@@ -9,32 +9,44 @@ import (
 type LoginUseCase struct {
 	tokenGenerator domain.TokenGenerator
 	passwordHasher domain.Hasher
-	userRepository domain.UserRepository
+	unitOfWork     domain.UnitOfWork
 }
 
-func NewLoginUseCase(generator domain.TokenGenerator, hasher domain.Hasher, userRepository domain.UserRepository) *LoginUseCase {
+func NewLoginUseCase(generator domain.TokenGenerator, hasher domain.Hasher, unitOfWork domain.UnitOfWork) *LoginUseCase {
 	return &LoginUseCase{
 		tokenGenerator: generator,
 		passwordHasher: hasher,
-		userRepository: userRepository,
+		unitOfWork:     unitOfWork,
 	}
 }
 
-func (uc *LoginUseCase) Execute(ctx context.Context, username, password string) (domain.TokenPair, error) {
-	user, err := uc.userRepository.GetByUsername(ctx, username)
+func (uc *LoginUseCase) Execute(ctx context.Context, username, password string) (pair domain.TokenPair, err error) {
+	err = uc.unitOfWork.Execute(ctx, func(ctx context.Context, repos domain.Repositories) error {
+		// Находим пользователя
+		user, err := repos.Users().GetByUsername(ctx, username)
 
-	if err != nil {
-		return domain.TokenPair{}, err
-	}
+		if err != nil {
+			return err
+		}
 
-	if !uc.passwordHasher.Compare(user.PasswordHash, password) {
-		return domain.TokenPair{}, domain.ErrInvalidPassword
-	}
+		// Проверям пароль с хешем
+		if !uc.passwordHasher.Compare(user.PasswordHash, password) {
+			return domain.ErrInvalidPassword
+		}
 
-	payload := domain.TokenPayload{
-		Subject:  user.ID,
-		Username: user.Username,
-	}
+		payload := domain.TokenPayload{
+			Subject:  user.ID,
+			Username: user.Username,
+		}
 
-	return uc.tokenGenerator.Generate(payload)
+		// Генерируем пару токенов
+		pair, err = uc.tokenGenerator.Generate(payload)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return pair, err
 }

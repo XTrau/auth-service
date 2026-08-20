@@ -130,11 +130,12 @@ func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 // @Success        204
 // @Router         /auth/logout [post]
 func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := r.Cookie(RefreshTokenName)
+	c, err := r.Cookie(RefreshTokenName)
 	if err == http.ErrNoCookie {
-		http.Error(w, "user not logged in", http.StatusBadRequest)
 		return
 	}
+
+	ah.authUseCases.TokenBlock.Execute(r.Context(), c.Value)
 
 	cookie := &http.Cookie{
 		Name:     RefreshTokenName,
@@ -165,12 +166,16 @@ func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Создаем новую пару токенов
 	tokens, err := ah.authUseCases.Refresh.Execute(c.Value)
 	if err != nil {
 		slog.Info("плохой jwt токен пользователя", slog.String("error", err.Error()))
 		http.Error(w, "user not logged in", http.StatusUnauthorized)
 		return
 	}
+
+	// Блокируем старый токен
+	ah.authUseCases.TokenBlock.Execute(r.Context(), c.Value)
 
 	b, err := json.Marshal(dto.AccessTokenResponse{Token: tokens.Access})
 	if err != nil {

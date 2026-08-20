@@ -50,13 +50,14 @@ func Run() error {
 
 	// Зависимости
 	userRepository := repositories.NewPostgresUserRepository(db)
+	blockedTokensRepository := repositories.NewPostgresBlockedTokensRepository(db)
 
 	jwtEncoder := authjwt.NewJwtEncoder(cfg)
 	jwtDecoder := authjwt.NewJwtDecoder(cfg)
 	jwtGenerator := authjwt.NewJwtGenerator(jwtEncoder)
 	hasher := password.NewArgon2Hasher(password.Argon2DefaultParams())
 
-	authUseCases := usecases.NewAuthUseCases(jwtGenerator, jwtDecoder, hasher, userRepository)
+	authUseCases := usecases.NewAuthUseCases(jwtGenerator, jwtDecoder, hasher, userRepository, blockedTokensRepository)
 
 	// Регистрация хендлеров
 	mux := http.NewServeMux()

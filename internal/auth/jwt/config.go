@@ -2,7 +2,7 @@ package jwt
 
 import "crypto/rsa"
 
-type RSA256Config interface {
+type RS256Config interface {
 	PrivateRSAKey() *rsa.PrivateKey
 	PublicRSAKey() *rsa.PublicKey
 }

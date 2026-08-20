@@ -8,13 +8,13 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type JwtEncoder struct {
+type RS256Encoder struct {
 	privateKey *rsa.PrivateKey
 	publicKey  *rsa.PublicKey
 }
 
-func NewJwtEncoder(cfg RSA256Config) *JwtEncoder {
-	return &JwtEncoder{
+func NewRS256Encoder(cfg RS256Config) *RS256Encoder {
+	return &RS256Encoder{
 		privateKey: cfg.PrivateRSAKey(),
 		publicKey:  cfg.PublicRSAKey(),
 	}
@@ -26,7 +26,7 @@ type CustomClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (tg *JwtEncoder) Encode(payload domain.TokenPayload, tokenType string, expire time.Duration) (string, error) {
+func (e *RS256Encoder) Encode(payload domain.TokenPayload, tokenType string, expire time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, CustomClaims{
 		Username: payload.Username,
 		Type:     tokenType,
@@ -37,7 +37,7 @@ func (tg *JwtEncoder) Encode(payload domain.TokenPayload, tokenType string, expi
 		},
 	})
 
-	tokenString, err := token.SignedString(tg.privateKey)
+	tokenString, err := token.SignedString(e.privateKey)
 	if err != nil {
 		return "", err
 	}

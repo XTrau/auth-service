@@ -51,8 +51,8 @@ func Run() error {
 	// Зависимости
 	unitOfWork := uow.NewPostgresUnitOfWork(db)
 
-	jwtEncoder := authjwt.NewJwtEncoder(cfg)
-	jwtDecoder := authjwt.NewJwtDecoder(cfg)
+	jwtEncoder := authjwt.NewRS256Encoder(cfg)
+	jwtDecoder := authjwt.NewRS256Decoder(cfg)
 	jwtGenerator := authjwt.NewJwtGenerator(jwtEncoder)
 	hasher := password.NewArgon2Hasher(password.Argon2DefaultParams())
 

@@ -8,19 +8,19 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type JwtDecoder struct {
+type RS256Decoder struct {
 	publicKey *rsa.PublicKey
 }
 
-func NewJwtDecoder(cfg RSA256Config) *JwtDecoder {
-	return &JwtDecoder{
+func NewRS256Decoder(cfg RS256Config) *RS256Decoder {
+	return &RS256Decoder{
 		publicKey: cfg.PublicRSAKey(),
 	}
 }
 
-func (jd *JwtDecoder) parseToken(tokenString string, claims jwt.Claims) (*jwt.Token, error) {
+func (d *RS256Decoder) parseToken(tokenString string, claims jwt.Claims) (*jwt.Token, error) {
 	t, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return jd.publicKey, nil
+		return d.publicKey, nil
 	})
 
 	if err != nil {
@@ -34,17 +34,30 @@ func (jd *JwtDecoder) parseToken(tokenString string, claims jwt.Claims) (*jwt.To
 	return t, nil
 }
 
-func (jd *JwtDecoder) Verify(tokenString string) error {
-	_, err := jd.parseToken(tokenString, nil)
-	return err
+func (d *RS256Decoder) Verify(tokenString string) error {
+	t, err := d.parseToken(tokenString, nil)
+
+	if err != nil {
+		return err
+	}
+
+	if t.Method != jwt.SigningMethodRS256 {
+		return ErrInvalidSigningMethod
+	}
+
+	return nil
 }
 
-func (jd *JwtDecoder) Decode(tokenString string, tokenType string) (domain.TokenPayload, error) {
+func (d *RS256Decoder) Decode(tokenString string, tokenType string) (domain.TokenPayload, error) {
 	claims := new(CustomClaims)
-	_, err := jd.parseToken(tokenString, claims)
+	t, err := d.parseToken(tokenString, claims)
 
 	if err != nil {
 		return domain.TokenPayload{}, err
+	}
+
+	if t.Method != jwt.SigningMethodRS256 {
+		return domain.TokenPayload{}, ErrInvalidSigningMethod
 	}
 
 	if claims.Type != tokenType {

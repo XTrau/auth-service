@@ -11,39 +11,39 @@ const (
 	RefreshType = "refresh"
 )
 
-type JwtGenerator struct {
-	encoder *JwtEncoder
+type RS256Generator struct {
+	encoder *RS256Encoder
 }
 
-func NewJwtGenerator(encoder *JwtEncoder) *JwtGenerator {
-	return &JwtGenerator{
+func NewJwtGenerator(encoder *RS256Encoder) *RS256Generator {
+	return &RS256Generator{
 		encoder: encoder,
 	}
 }
 
-func (jg *JwtGenerator) generateAccessToken(payload domain.TokenPayload) (string, error) {
-	access, err := jg.encoder.Encode(payload, AccessType, time.Minute*15)
+func (g *RS256Generator) generateAccessToken(payload domain.TokenPayload) (string, error) {
+	access, err := g.encoder.Encode(payload, AccessType, time.Minute*15)
 	if err != nil {
 		return "", err
 	}
 	return access, nil
 }
 
-func (jg *JwtGenerator) generateRefreshToken(payload domain.TokenPayload) (string, error) {
-	refresh, err := jg.encoder.Encode(payload, RefreshType, time.Hour*24*30)
+func (g *RS256Generator) generateRefreshToken(payload domain.TokenPayload) (string, error) {
+	refresh, err := g.encoder.Encode(payload, RefreshType, time.Hour*24*30)
 	if err != nil {
 		return "", err
 	}
 	return refresh, nil
 }
 
-func (jg *JwtGenerator) Generate(payload domain.TokenPayload) (domain.TokenPair, error) {
-	access, err := jg.generateAccessToken(payload)
+func (g *RS256Generator) Generate(payload domain.TokenPayload) (domain.TokenPair, error) {
+	access, err := g.generateAccessToken(payload)
 	if err != nil {
 		return domain.TokenPair{}, err
 	}
 
-	refresh, err := jg.generateRefreshToken(payload)
+	refresh, err := g.generateRefreshToken(payload)
 	if err != nil {
 		return domain.TokenPair{}, err
 	}

@@ -20,7 +20,9 @@ func NewRegisterUseCase(hasher domain.Hasher, unitOfWork domain.UnitOfWork) *Reg
 }
 
 func (uc *RegisterUseCase) Execute(ctx context.Context, username string, password string) (user *domain.User, err error) {
-	err = uc.unitOfWork.Execute(ctx, func(ctx context.Context, repos domain.Repositories) error {
+	const attempts int = 3
+
+	err = uc.unitOfWork.ExecuteWithRetry(ctx, attempts, func(ctx context.Context, repos domain.Repositories) error {
 		// Проверим существует ли пользователь с таким username
 		u, err := repos.Users().GetByUsername(ctx, username)
 		if err != nil && !errors.Is(err, domain.ErrUserNotFound) {

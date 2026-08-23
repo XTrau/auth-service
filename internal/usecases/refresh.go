@@ -22,7 +22,9 @@ func NewRefreshUseCase(generator domain.TokenGenerator, decoder domain.TokenDeco
 }
 
 func (uc *RefreshUseCase) Execute(ctx context.Context, refreshToken string) (pair domain.TokenPair, err error) {
-	err = uc.unitOfWork.Execute(ctx, func(ctx context.Context, repos domain.Repositories) error {
+	const attempts int = 3
+
+	err = uc.unitOfWork.ExecuteWithRetry(ctx, attempts, func(ctx context.Context, repos domain.Repositories) error {
 		// Проверить токен в заблокированных
 		found, err := repos.BlockedTokens().Find(ctx, refreshToken)
 		if err != nil {

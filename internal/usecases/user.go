@@ -20,13 +20,15 @@ func NewGetUserUseCase(decoder domain.TokenDecoder, unitOfWork domain.UnitOfWork
 }
 
 func (uc *GetUserUseCase) Execute(ctx context.Context, accessToken string) (user *domain.User, err error) {
-	err = uc.unitOfWork.Execute(ctx, func(ctx context.Context, repos domain.Repositories) error {
-		// Достаем user id из токена
-		payload, err := uc.tokenDecoder.Decode(accessToken, authjwt.AccessType)
-		if err != nil {
-			return err
-		}
+	// Декодируем токен, получаем id
+	payload, err := uc.tokenDecoder.Decode(accessToken, authjwt.AccessType)
+	if err != nil {
+		return nil, err
+	}
 
+	const attempts int = 3
+
+	err = uc.unitOfWork.ExecuteWithRetry(ctx, attempts, func(ctx context.Context, repos domain.Repositories) error {
 		// Находим пользователя по id
 		user, err = repos.Users().GetByID(ctx, payload.Subject)
 		if err != nil {

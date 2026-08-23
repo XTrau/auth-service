@@ -20,7 +20,9 @@ func NewBlockTokenUseCase(decoder domain.TokenDecoder, unitOfWork domain.UnitOfW
 }
 
 func (uc *BlockTokenUseCase) Execute(ctx context.Context, refreshTokenString string) error {
-	err := uc.unitOfWork.Execute(ctx, func(ctx context.Context, repos domain.Repositories) error {
+	const attempts int = 3
+
+	err := uc.unitOfWork.ExecuteWithRetry(ctx, attempts, func(ctx context.Context, repos domain.Repositories) error {
 		// декодировать токен (получить expires_at)
 		payload, err := uc.decoder.Decode(refreshTokenString, authjwt.RefreshType)
 		if err != nil {

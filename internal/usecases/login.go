@@ -21,7 +21,9 @@ func NewLoginUseCase(generator domain.TokenGenerator, hasher domain.Hasher, unit
 }
 
 func (uc *LoginUseCase) Execute(ctx context.Context, username, password string) (pair domain.TokenPair, err error) {
-	err = uc.unitOfWork.Execute(ctx, func(ctx context.Context, repos domain.Repositories) error {
+	const attempts int = 3
+	
+	err = uc.unitOfWork.ExecuteWithRetry(ctx, attempts, func(ctx context.Context, repos domain.Repositories) error {
 		// Находим пользователя
 		user, err := repos.Users().GetByUsername(ctx, username)
 

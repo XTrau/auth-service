@@ -14,6 +14,7 @@ import (
 	"github.com/XTrau/auth-service/internal/auth/password"
 	"github.com/XTrau/auth-service/internal/database"
 	"github.com/XTrau/auth-service/internal/handlers"
+	"github.com/XTrau/auth-service/internal/middlewares"
 	"github.com/XTrau/auth-service/internal/uow"
 	"github.com/XTrau/auth-service/internal/usecases"
 
@@ -70,10 +71,13 @@ func Run() error {
 
 	mux.HandleFunc("GET /swagger/", httpSwagger.WrapHandler)
 
+	// Регистрация Middlewares
+	h := middlewares.Recover(mux)
+
 	serverAddr := ":8080"
 	server := http.Server{
 		Addr:    serverAddr,
-		Handler: mux,
+		Handler: h,
 
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,

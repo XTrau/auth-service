@@ -72,8 +72,12 @@ func Run() error {
 	mux.HandleFunc("GET /swagger/", httpSwagger.WrapHandler)
 
 	// Регистрация Middlewares
-	h := middlewares.Recover(mux)
+	var h http.Handler = mux
 
+	h = middlewares.Recover(h)
+	h = middlewares.Log(h)
+
+	// Параметры сервера
 	serverAddr := ":8080"
 	server := http.Server{
 		Addr:    serverAddr,

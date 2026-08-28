@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/auth/login": {
+        "/api/auth/login": {
             "post": {
                 "description": "Возвращает access token в body и refresh token в cookie\nДля доступа к api нужен access token\nВремя жизни access token - 15 минут\nВремя жизни refresh token - 30 дней\nДля обновления access token необходимо делать запрос POST /refresh с refresh token в куках",
                 "consumes": [
@@ -40,13 +40,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handlers.AuthHandlers"
+                            "$ref": "#/definitions/dto.AccessTokenResponse"
                         }
                     }
                 }
             }
         },
-        "/auth/logout": {
+        "/api/auth/logout": {
             "post": {
                 "description": "Удаляет refresh token из cookie",
                 "consumes": [
@@ -63,7 +63,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/refresh": {
+        "/api/auth/refresh": {
             "post": {
                 "description": "Возвращает новый access и refresh токены\nТребуется refresh токен в куках",
                 "tags": [
@@ -77,7 +77,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/register": {
+        "/api/auth/register": {
             "post": {
                 "description": "Регистрирует пользователя в системе\nлогиниться в системе нужно отдельно от регистрации",
                 "consumes": [
@@ -105,7 +105,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/user": {
+        "/api/auth/user": {
             "get": {
                 "description": "Возвращает данные пользователя по access_token",
                 "tags": [
@@ -139,6 +139,14 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.AccessTokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.LoginRequest": {
             "type": "object",
             "properties": {
@@ -176,9 +184,6 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
-        },
-        "handlers.AuthHandlers": {
-            "type": "object"
         }
     }
 }`

@@ -15,7 +15,10 @@ import (
 	"github.com/asaskevich/govalidator"
 )
 
-const RefreshTokenName = "refresh"
+const (
+	RefreshTokenName       = "refresh"
+	RefreshTokenCookiePath = "/api"
+)
 
 type AuthorizationService interface {
 	RegisterUser(ctx context.Context, username, password string) (user *domain.User, err error)
@@ -25,12 +28,12 @@ type AuthorizationService interface {
 	GetUser(ctx context.Context, accessToken string) (user *domain.User, err error)
 }
 
-type AuthHandlers struct {
+type authorizationHandlers struct {
 	service AuthorizationService
 }
 
-func NewAuthHandlers(service AuthorizationService) *AuthHandlers {
-	return &AuthHandlers{service}
+func NewAuthorizationHandlers(service AuthorizationService) *authorizationHandlers {
+	return &authorizationHandlers{service}
 }
 
 // RegisterHandler    godoc
@@ -41,8 +44,8 @@ func NewAuthHandlers(service AuthorizationService) *AuthHandlers {
 // @Accept            json
 // @Param             userObject body dto.RegisterRequest true "userData"
 // @Success           201
-// @Router            /auth/register [post]
-func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+// @Router            /api/auth/register [post]
+func (ah *authorizationHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		slog.Info("плохое тело запроса на /register", slog.String("error", err.Error()))
@@ -87,9 +90,9 @@ func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 // @Tags           Аутентификация
 // @Accept         json
 // @Param          userObject body dto.LoginRequest true "userData"
-// @Success        200 {object} handlers.AuthHandlers.LoginHandler.response
-// @Router         /auth/login [post]
-func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
+// @Success        200 {object} dto.AccessTokenResponse
+// @Router         /api/auth/login [post]
+func (ah *authorizationHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		slog.Info("плохое тело запроса на /login", slog.String("error", err.Error()))
@@ -119,7 +122,7 @@ func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	refreshCookie := http.Cookie{
 		Name:     RefreshTokenName,
 		Value:    tokens.Refresh,
-		Path:     "/auth",
+		Path:     RefreshTokenCookiePath,
 		MaxAge:   3600 * 24 * 30,
 		HttpOnly: true,
 		Secure:   true,
@@ -137,8 +140,8 @@ func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 // @Tags           Аутентификация
 // @Accept         json
 // @Success        204
-// @Router         /auth/logout [post]
-func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+// @Router         /api/auth/logout [post]
+func (ah *authorizationHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(RefreshTokenName)
 	if err == http.ErrNoCookie {
 		return
@@ -149,7 +152,7 @@ func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	cookie := &http.Cookie{
 		Name:     RefreshTokenName,
 		Value:    "",
-		Path:     "/auth",
+		Path:     RefreshTokenCookiePath,
 		MaxAge:   -1,
 		Expires:  time.Unix(0, 0),
 		HttpOnly: true,
@@ -167,8 +170,8 @@ func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 // @Description    		Требуется refresh токен в куках
 // @Tags           		Аутентификация
 // @Success        		200
-// @Router         		/auth/refresh [post]
-func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Request) {
+// @Router         		/api/auth/refresh [post]
+func (ah *authorizationHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(RefreshTokenName)
 	if err == http.ErrNoCookie {
 		http.Error(w, "user not logged in", http.StatusUnauthorized)
@@ -193,7 +196,7 @@ func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Requ
 	refreshCookie := http.Cookie{
 		Name:     RefreshTokenName,
 		Value:    tokens.Refresh,
-		Path:     "/auth",
+		Path:     RefreshTokenCookiePath,
 		MaxAge:   3600 * 24 * 30,
 		HttpOnly: true,
 		Secure:   true,
@@ -212,8 +215,8 @@ func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Requ
 // @Param 		  Authorization header string true "Example: Bearer {token}"
 // @Success       200   {object} dto.UserDataResponse
 // @Success	 	  401	{string} string "unauthorized user"
-// @Router        /auth/user [get]
-func (ah *AuthHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
+// @Router        /api/auth/user [get]
+func (ah *authorizationHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 	if len(authHeader) < 7 || !strings.HasPrefix(authHeader, "Bearer ") {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)

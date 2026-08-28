@@ -19,8 +19,6 @@ import (
 	"github.com/XTrau/auth-service/internal/service"
 
 	_ "github.com/XTrau/auth-service/docs"
-
-	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 // @title       Swagger auth-api
@@ -50,11 +48,10 @@ func Run() error {
 	slog.Info("Миграции загружены")
 
 	// Зависимости
-	unitOfWork := repositories.NewPgUnitOfWork(db)
-
 	jwtTokenizer := authjwt.NewRS256Tokenizer(cfg)
 	argon2Hasher := password.NewArgon2Hasher(password.Argon2DefaultParams())
 
+	unitOfWork := repositories.NewPgUnitOfWork(db)
 	userRepository := repositories.NewPgUserRepository()
 	blockedTokensRepository := repositories.NewPgBlockedTokensRepository()
 
@@ -62,15 +59,10 @@ func Run() error {
 
 	// Регистрация хендлеров
 	mux := http.NewServeMux()
-	authHandlers := handlers.NewAuthHandlers(authorizationService)
 
-	mux.HandleFunc("POST /auth/register", authHandlers.RegisterHandler)
-	mux.HandleFunc("POST /auth/login", authHandlers.LoginHandler)
-	mux.HandleFunc("POST /auth/logout", authHandlers.LogoutHandler)
-	mux.HandleFunc("POST /auth/refresh", authHandlers.RefreshTokensHandler)
-	mux.HandleFunc("GET /auth/user", authHandlers.GetCurrentUserHandler)
+	authHandlers := handlers.NewAuthorizationHandlers(authorizationService)
 
-	mux.HandleFunc("GET /swagger/", httpSwagger.WrapHandler)
+	handlers.RegisterHandlers(mux, authHandlers)
 
 	// Регистрация Middlewares
 	var h http.Handler = mux
@@ -92,7 +84,7 @@ func Run() error {
 
 	// Запуск сервера
 	go func() {
-		slog.Info("Сервер запущен", slog.String("address", serverAddr))
+		slog.Info("Сервер запущен", slog.String("address", "http://localhost:8080"))
 		if err := server.ListenAndServe(); err != nil {
 			slog.Error("Ошибка при работе сервера", slog.String("error", err.Error()))
 		}

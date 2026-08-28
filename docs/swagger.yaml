@@ -1,4 +1,9 @@
 definitions:
+  dto.AccessTokenResponse:
+    properties:
+      access_token:
+        type: string
+    type: object
   dto.LoginRequest:
     properties:
       login:
@@ -26,12 +31,10 @@ definitions:
       username:
         type: string
     type: object
-  handlers.AuthHandlers:
-    type: object
 info:
   contact: {}
 paths:
-  /auth/login:
+  /api/auth/login:
     post:
       consumes:
       - application/json
@@ -52,11 +55,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handlers.AuthHandlers'
+            $ref: '#/definitions/dto.AccessTokenResponse'
       summary: Логин пользователя
       tags:
       - Аутентификация
-  /auth/logout:
+  /api/auth/logout:
     post:
       consumes:
       - application/json
@@ -67,7 +70,7 @@ paths:
       summary: Разлогинить пользователя
       tags:
       - Аутентификация
-  /auth/refresh:
+  /api/auth/refresh:
     post:
       description: |-
         Возвращает новый access и refresh токены
@@ -78,7 +81,7 @@ paths:
       summary: Обновить токены
       tags:
       - Аутентификация
-  /auth/register:
+  /api/auth/register:
     post:
       consumes:
       - application/json
@@ -98,7 +101,7 @@ paths:
       summary: Регистрация пользователя
       tags:
       - Аутентификация
-  /auth/user:
+  /api/auth/user:
     get:
       description: Возвращает данные пользователя по access_token
       parameters:

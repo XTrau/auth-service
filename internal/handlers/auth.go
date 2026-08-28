@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -10,18 +11,26 @@ import (
 
 	"github.com/XTrau/auth-service/internal/domain"
 	"github.com/XTrau/auth-service/internal/dto"
-	"github.com/XTrau/auth-service/internal/usecases"
+	errs "github.com/XTrau/auth-service/internal/errors"
 	"github.com/asaskevich/govalidator"
 )
 
 const RefreshTokenName = "refresh"
 
-type AuthHandlers struct {
-	authUseCases *usecases.AuthUseCases
+type AuthorizationService interface {
+	RegisterUser(ctx context.Context, username, password string) (user *domain.User, err error)
+	LoginUser(ctx context.Context, username, password string) (pair domain.TokenPair, err error)
+	BlockRefreshToken(ctx context.Context, refreshToken string) error
+	RefreshTokens(ctx context.Context, refreshToken string) (pair domain.TokenPair, err error)
+	GetUser(ctx context.Context, accessToken string) (user *domain.User, err error)
 }
 
-func NewAuthHandlers(authUseCases *usecases.AuthUseCases) *AuthHandlers {
-	return &AuthHandlers{authUseCases: authUseCases}
+type AuthHandlers struct {
+	service AuthorizationService
+}
+
+func NewAuthHandlers(service AuthorizationService) *AuthHandlers {
+	return &AuthHandlers{service}
 }
 
 // RegisterHandler    godoc
@@ -37,19 +46,19 @@ func (ah *AuthHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 	var req dto.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		slog.Info("плохое тело запроса на /register", slog.String("error", err.Error()))
-		http.Error(w, ErrInvalidRequestBody.Error(), http.StatusBadRequest)
+		http.Error(w, errs.ErrInvalidRequestBody.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if ok, err := govalidator.ValidateStruct(req); !ok || err != nil {
 		slog.Info("ошибка при валидации тела /register", slog.Any("username", req.Username), slog.String("error", err.Error()))
-		http.Error(w, ErrInvalidRequestBody.Error(), http.StatusBadRequest)
+		http.Error(w, errs.ErrInvalidRequestBody.Error(), http.StatusBadRequest)
 		return
 	}
 
-	user, err := ah.authUseCases.Register.Execute(r.Context(), req.Username, req.Password)
+	user, err := ah.service.RegisterUser(r.Context(), req.Username, req.Password)
 
-	if errors.Is(err, domain.ErrUsernameAlreadyExists) {
+	if errors.Is(err, errs.ErrUsernameAlreadyExists) {
 		slog.Info("попытка зарегистрировать существующего пользователя", slog.String("error", err.Error()))
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
@@ -84,12 +93,12 @@ func (ah *AuthHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		slog.Info("плохое тело запроса на /login", slog.String("error", err.Error()))
-		http.Error(w, ErrInvalidRequestBody.Error(), http.StatusBadRequest)
+		http.Error(w, errs.ErrInvalidRequestBody.Error(), http.StatusBadRequest)
 		return
 	}
 
-	tokens, err := ah.authUseCases.Login.Execute(r.Context(), req.Login, req.Password)
-	if errors.Is(err, domain.ErrUserNotFound) || errors.Is(err, domain.ErrInvalidPassword) {
+	tokens, err := ah.service.LoginUser(r.Context(), req.Login, req.Password)
+	if errors.Is(err, errs.ErrUserNotFound) || errors.Is(err, errs.ErrInvalidPassword) {
 		http.Error(w, "incorrect username or password", http.StatusBadRequest)
 		return
 	}
@@ -135,7 +144,7 @@ func (ah *AuthHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ah.authUseCases.TokenBlock.Execute(r.Context(), c.Value)
+	ah.service.BlockRefreshToken(r.Context(), c.Value)
 
 	cookie := &http.Cookie{
 		Name:     RefreshTokenName,
@@ -167,7 +176,7 @@ func (ah *AuthHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Создаем новую пару токенов и блокируем старый
-	tokens, err := ah.authUseCases.Refresh.Execute(r.Context(), c.Value)
+	tokens, err := ah.service.RefreshTokens(r.Context(), c.Value)
 	if err != nil {
 		slog.Info("плохой jwt токен пользователя", slog.String("error", err.Error()))
 		http.Error(w, "user not logged in", http.StatusUnauthorized)
@@ -212,7 +221,7 @@ func (ah *AuthHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	accessTokenString := strings.TrimPrefix(authHeader, "Bearer ")
-	user, err := ah.authUseCases.User.Execute(r.Context(), accessTokenString)
+	user, err := ah.service.GetUser(r.Context(), accessTokenString)
 
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)

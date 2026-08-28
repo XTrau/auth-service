@@ -2,22 +2,25 @@ package repositories
 
 import (
 	"context"
-	"database/sql"
 	"time"
 )
 
-type PostgresBlockedTokensRepository struct {
-	tx *sql.Tx
+type PgBlockedTokensRepository struct {
 }
 
-func NewPostgresBlockedTokensRepository(tx *sql.Tx) *PostgresBlockedTokensRepository {
-	return &PostgresBlockedTokensRepository{tx}
+func NewPgBlockedTokensRepository() *PgBlockedTokensRepository {
+	return &PgBlockedTokensRepository{}
 }
 
-func (repo *PostgresBlockedTokensRepository) Create(ctx context.Context, tokenString string, expiresAt time.Time) error {
+func (repo *PgBlockedTokensRepository) Create(ctx context.Context, tokenString string, expiresAt time.Time) error {
+	tx, err := GetTxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
 	query := "INSERT INTO blocked_tokens (token, expires_at) VALUES ($1, $2)"
 
-	_, err := repo.tx.ExecContext(ctx, query, tokenString, expiresAt)
+	_, err = tx.ExecContext(ctx, query, tokenString, expiresAt)
 
 	if err != nil {
 		return err
@@ -26,12 +29,17 @@ func (repo *PostgresBlockedTokensRepository) Create(ctx context.Context, tokenSt
 	return nil
 }
 
-func (repo *PostgresBlockedTokensRepository) Find(ctx context.Context, tokenString string) (bool, error) {
+func (repo *PgBlockedTokensRepository) Find(ctx context.Context, tokenString string) (bool, error) {
+	tx, err := GetTxFromContext(ctx)
+	if err != nil {
+		return false, err
+	}
+
 	query := "SELECT EXISTS(SELECT * FROM blocked_tokens WHERE token=$1)"
 
 	var found bool
 
-	if err := repo.tx.QueryRowContext(ctx, query, tokenString).Scan(&found); err != nil {
+	if err := tx.QueryRowContext(ctx, query, tokenString).Scan(&found); err != nil {
 		return false, err
 	}
 

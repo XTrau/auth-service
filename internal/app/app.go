@@ -15,8 +15,8 @@ import (
 	"github.com/XTrau/auth-service/internal/database"
 	"github.com/XTrau/auth-service/internal/handlers"
 	"github.com/XTrau/auth-service/internal/middlewares"
-	"github.com/XTrau/auth-service/internal/uow"
-	"github.com/XTrau/auth-service/internal/usecases"
+	"github.com/XTrau/auth-service/internal/repositories"
+	"github.com/XTrau/auth-service/internal/service"
 
 	_ "github.com/XTrau/auth-service/docs"
 
@@ -50,18 +50,19 @@ func Run() error {
 	slog.Info("Миграции загружены")
 
 	// Зависимости
-	unitOfWork := uow.NewPostgresUnitOfWork(db)
+	unitOfWork := repositories.NewPgUnitOfWork(db)
 
-	jwtEncoder := authjwt.NewRS256Encoder(cfg)
-	jwtDecoder := authjwt.NewRS256Decoder(cfg)
-	jwtGenerator := authjwt.NewJwtGenerator(jwtEncoder)
-	hasher := password.NewArgon2Hasher(password.Argon2DefaultParams())
+	jwtTokenizer := authjwt.NewRS256Tokenizer(cfg)
+	argon2Hasher := password.NewArgon2Hasher(password.Argon2DefaultParams())
 
-	authUseCases := usecases.NewAuthUseCases(jwtGenerator, jwtDecoder, hasher, unitOfWork)
+	userRepository := repositories.NewPgUserRepository()
+	blockedTokensRepository := repositories.NewPgBlockedTokensRepository()
+
+	authorizationService := service.NewAuthorizationService(jwtTokenizer, argon2Hasher, unitOfWork, userRepository, blockedTokensRepository)
 
 	// Регистрация хендлеров
 	mux := http.NewServeMux()
-	authHandlers := handlers.NewAuthHandlers(authUseCases)
+	authHandlers := handlers.NewAuthHandlers(authorizationService)
 
 	mux.HandleFunc("POST /auth/register", authHandlers.RegisterHandler)
 	mux.HandleFunc("POST /auth/login", authHandlers.LoginHandler)

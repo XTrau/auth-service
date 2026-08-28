@@ -6,22 +6,27 @@ import (
 	"log/slog"
 
 	"github.com/XTrau/auth-service/internal/domain"
+	errs "github.com/XTrau/auth-service/internal/errors"
 )
 
-type PostgresUserRepository struct {
-	tx *sql.Tx
+type PgUserRepository struct {
 }
 
-func NewPostgresUserRepository(tx *sql.Tx) *PostgresUserRepository {
-	return &PostgresUserRepository{tx}
+func NewPgUserRepository() *PgUserRepository {
+	return &PgUserRepository{}
 }
 
-func (repo *PostgresUserRepository) Create(ctx context.Context, username string, passwordHash string) (*domain.User, error) {
+func (repo *PgUserRepository) Create(ctx context.Context, username string, passwordHash string) (*domain.User, error) {
+	tx, err := GetTxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	slog.Info("Создание пользователя в базе данных", slog.String("username", username))
 	query := "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id"
 
 	var id int
-	err := repo.tx.QueryRowContext(ctx, query, username, passwordHash).Scan(&id)
+	err = tx.QueryRowContext(ctx, query, username, passwordHash).Scan(&id)
 	if err != nil {
 		return nil, err
 	}
@@ -33,17 +38,22 @@ func (repo *PostgresUserRepository) Create(ctx context.Context, username string,
 	}, nil
 }
 
-func (repo *PostgresUserRepository) GetByID(ctx context.Context, id domain.UserID) (*domain.User, error) {
+func (repo *PgUserRepository) GetByID(ctx context.Context, id domain.UserID) (*domain.User, error) {
+	tx, err := GetTxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	slog.Info("Получение пользователя с базы данных",
 		slog.Int64("id", int64(id)),
 	)
 	query := "SELECT username, password_hash FROM users WHERE id=$1"
 
 	var username, password string
-	err := repo.tx.QueryRowContext(ctx, query, id).Scan(&username, &password)
+	err = tx.QueryRowContext(ctx, query, id).Scan(&username, &password)
 
 	if err == sql.ErrNoRows {
-		return nil, domain.ErrUserNotFound
+		return nil, errs.ErrUserNotFound
 	}
 
 	if err != nil {
@@ -57,7 +67,12 @@ func (repo *PostgresUserRepository) GetByID(ctx context.Context, id domain.UserI
 	}, nil
 }
 
-func (repo *PostgresUserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
+func (repo *PgUserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
+	tx, err := GetTxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	slog.Info("Получение пользователя с базы данных",
 		slog.String("username", username),
 	)
@@ -65,10 +80,10 @@ func (repo *PostgresUserRepository) GetByUsername(ctx context.Context, username 
 
 	var id int64
 	var password string
-	err := repo.tx.QueryRowContext(ctx, query, username).Scan(&id, &password)
+	err = tx.QueryRowContext(ctx, query, username).Scan(&id, &password)
 
 	if err == sql.ErrNoRows {
-		return nil, domain.ErrUserNotFound
+		return nil, errs.ErrUserNotFound
 	}
 
 	if err != nil {

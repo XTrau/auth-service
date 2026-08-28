@@ -20,7 +20,8 @@ const (
 	RefreshTokenCookiePath = "/api"
 )
 
-type AuthorizationService interface {
+// Интерфейс сервиса для аутентификации
+type AuthenticationService interface {
 	RegisterUser(ctx context.Context, username, password string) (user *domain.User, err error)
 	LoginUser(ctx context.Context, username, password string) (pair domain.TokenPair, err error)
 	BlockRefreshToken(ctx context.Context, refreshToken string) error
@@ -28,12 +29,12 @@ type AuthorizationService interface {
 	GetUser(ctx context.Context, accessToken string) (user *domain.User, err error)
 }
 
-type authorizationHandlers struct {
-	service AuthorizationService
+type authenticationHandlers struct {
+	service AuthenticationService
 }
 
-func NewAuthorizationHandlers(service AuthorizationService) *authorizationHandlers {
-	return &authorizationHandlers{service}
+func NewAuthenticationHandlers(service AuthenticationService) *authenticationHandlers {
+	return &authenticationHandlers{service}
 }
 
 // RegisterHandler    godoc
@@ -45,7 +46,7 @@ func NewAuthorizationHandlers(service AuthorizationService) *authorizationHandle
 // @Param             userObject body dto.RegisterRequest true "userData"
 // @Success           201
 // @Router            /api/auth/register [post]
-func (ah *authorizationHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func (ah *authenticationHandlers) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		slog.Info("плохое тело запроса на /register", slog.String("error", err.Error()))
@@ -92,7 +93,7 @@ func (ah *authorizationHandlers) RegisterHandler(w http.ResponseWriter, r *http.
 // @Param          userObject body dto.LoginRequest true "userData"
 // @Success        200 {object} dto.AccessTokenResponse
 // @Router         /api/auth/login [post]
-func (ah *authorizationHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (ah *authenticationHandlers) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		slog.Info("плохое тело запроса на /login", slog.String("error", err.Error()))
@@ -141,7 +142,7 @@ func (ah *authorizationHandlers) LoginHandler(w http.ResponseWriter, r *http.Req
 // @Accept         json
 // @Success        204
 // @Router         /api/auth/logout [post]
-func (ah *authorizationHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+func (ah *authenticationHandlers) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(RefreshTokenName)
 	if err == http.ErrNoCookie {
 		return
@@ -171,7 +172,7 @@ func (ah *authorizationHandlers) LogoutHandler(w http.ResponseWriter, r *http.Re
 // @Tags           		Аутентификация
 // @Success        		200
 // @Router         		/api/auth/refresh [post]
-func (ah *authorizationHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Request) {
+func (ah *authenticationHandlers) RefreshTokensHandler(w http.ResponseWriter, r *http.Request) {
 	c, err := r.Cookie(RefreshTokenName)
 	if err == http.ErrNoCookie {
 		http.Error(w, "user not logged in", http.StatusUnauthorized)
@@ -216,7 +217,7 @@ func (ah *authorizationHandlers) RefreshTokensHandler(w http.ResponseWriter, r *
 // @Success       200   {object} dto.UserDataResponse
 // @Success	 	  401	{string} string "unauthorized user"
 // @Router        /api/auth/user [get]
-func (ah *authorizationHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
+func (ah *authenticationHandlers) GetCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
 	authHeader := r.Header.Get("Authorization")
 	if len(authHeader) < 7 || !strings.HasPrefix(authHeader, "Bearer ") {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)

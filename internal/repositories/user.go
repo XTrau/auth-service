@@ -16,83 +16,68 @@ func NewPgUserRepository() *PgUserRepository {
 	return &PgUserRepository{}
 }
 
-func (repo *PgUserRepository) Create(ctx context.Context, username string, passwordHash string) (*domain.User, error) {
+func (repo *PgUserRepository) Create(ctx context.Context, user domain.User) (domain.User, error) {
 	tx, err := GetTxFromContext(ctx)
 	if err != nil {
-		return nil, err
+		return domain.User{}, err
 	}
 
-	slog.Info("Создание пользователя в базе данных", slog.String("username", username))
+	slog.Info("Создание пользователя в базе данных", slog.String("username", user.Username))
 	query := "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id"
 
-	var id int
-	err = tx.QueryRowContext(ctx, query, username, passwordHash).Scan(&id)
+	var id int64
+	err = tx.QueryRowContext(ctx, query, user.Username, user.PasswordHash).Scan(&id)
 	if err != nil {
-		return nil, err
+		return domain.User{}, err
 	}
 
-	return &domain.User{
-		ID:           domain.UserID(id),
-		Username:     username,
-		PasswordHash: passwordHash,
-	}, nil
+	user.ID = id
+	return user, nil
 }
 
-func (repo *PgUserRepository) GetByID(ctx context.Context, id domain.UserID) (*domain.User, error) {
+func (repo *PgUserRepository) GetByID(ctx context.Context, id int64) (domain.User, error) {
 	tx, err := GetTxFromContext(ctx)
 	if err != nil {
-		return nil, err
+		return domain.User{}, err
 	}
 
-	slog.Info("Получение пользователя с базы данных",
-		slog.Int64("id", int64(id)),
-	)
+	slog.Info("Получение пользователя с базы данных", slog.Int64("id", int64(id)))
 	query := "SELECT username, password_hash FROM users WHERE id=$1"
 
-	var username, password string
-	err = tx.QueryRowContext(ctx, query, id).Scan(&username, &password)
+	user := domain.User{ID: id}
+	err = tx.QueryRowContext(ctx, query, id).Scan(&user.Username, &user.PasswordHash)
 
 	if err == sql.ErrNoRows {
-		return nil, errs.ErrUserNotFound
+		return domain.User{}, errs.ErrUserNotFound
 	}
 
 	if err != nil {
-		return nil, err
+		return domain.User{}, err
 	}
 
-	return &domain.User{
-		ID:           domain.UserID(id),
-		Username:     username,
-		PasswordHash: password,
-	}, nil
+	return user, nil
 }
 
-func (repo *PgUserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
+func (repo *PgUserRepository) GetByUsername(ctx context.Context, username string) (domain.User, error) {
 	tx, err := GetTxFromContext(ctx)
 	if err != nil {
-		return nil, err
+		return domain.User{}, err
 	}
 
-	slog.Info("Получение пользователя с базы данных",
-		slog.String("username", username),
-	)
+	slog.Info("Получение пользователя с базы данных", slog.String("username", username))
 	query := "SELECT id, password_hash FROM users WHERE username=$1"
 
-	var id int64
-	var password string
-	err = tx.QueryRowContext(ctx, query, username).Scan(&id, &password)
+	var user domain.User
+	err = tx.QueryRowContext(ctx, query, username).Scan(&user.ID, &user.PasswordHash)
 
 	if err == sql.ErrNoRows {
-		return nil, errs.ErrUserNotFound
+		return domain.User{}, errs.ErrUserNotFound
 	}
 
 	if err != nil {
-		return nil, err
+		return domain.User{}, err
 	}
 
-	return &domain.User{
-		ID:           domain.UserID(id),
-		Username:     username,
-		PasswordHash: password,
-	}, nil
+	user.Username = username
+	return user, nil
 }

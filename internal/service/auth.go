@@ -33,9 +33,9 @@ type BlockedTokensRepository interface {
 
 // Репозиторий пользователей
 type UserRepository interface {
-	Create(ctx context.Context, username string, passwordHash string) (*domain.User, error)
-	GetByID(ctx context.Context, id domain.UserID) (*domain.User, error)
-	GetByUsername(ctx context.Context, username string) (*domain.User, error)
+	Create(ctx context.Context, user domain.User) (domain.User, error)
+	GetByID(ctx context.Context, id int64) (domain.User, error)
+	GetByUsername(ctx context.Context, username string) (domain.User, error)
 }
 
 // Паттерн чтобы репозитории работали в одной транзакции
@@ -69,7 +69,18 @@ func NewAuthenticationService(
 	}
 }
 
-func (s *authenticationService) RegisterUser(ctx context.Context, username, password string) (user *domain.User, err error) {
+func (s *authenticationService) RegisterUser(ctx context.Context, username, password string) (user domain.User, err error) {
+	// Валидация username и password
+	_, err = domain.NewUsername(username)
+	if err != nil {
+		return domain.User{}, err
+	}
+
+	_, err = domain.NewPassword(password)
+	if err != nil {
+		return domain.User{}, err
+	}
+
 	err = s.unitOfWork.ExecuteWithRetry(ctx, defaultAttempts, func(ctx context.Context) error {
 		// Проверим существует ли пользователь с таким username
 		u, err := s.userRepo.GetByUsername(ctx, username)
@@ -77,7 +88,7 @@ func (s *authenticationService) RegisterUser(ctx context.Context, username, pass
 			return err
 		}
 
-		if err == nil && u != nil {
+		if err == nil && u.Username != "" {
 			return errs.ErrUsernameAlreadyExists
 		}
 
@@ -88,8 +99,13 @@ func (s *authenticationService) RegisterUser(ctx context.Context, username, pass
 			return err
 		}
 
+		user = domain.User{
+			Username:     username,
+			PasswordHash: passwordHash,
+		}
+
 		// Создаем пользователя
-		user, err = s.userRepo.Create(ctx, username, passwordHash)
+		user, err = s.userRepo.Create(ctx, user)
 
 		if err != nil {
 			return err
@@ -188,11 +204,11 @@ func (s *authenticationService) RefreshTokens(ctx context.Context, refreshToken 
 	return pair, err
 }
 
-func (s *authenticationService) GetUser(ctx context.Context, accessToken string) (user *domain.User, err error) {
+func (s *authenticationService) GetUser(ctx context.Context, accessToken string) (user domain.User, err error) {
 	// Декодируем токен, получаем id
 	payload, err := s.tokenizer.Decode(accessToken, authjwt.AccessType)
 	if err != nil {
-		return nil, err
+		return domain.User{}, err
 	}
 
 	err = s.unitOfWork.ExecuteWithRetry(ctx, defaultAttempts, func(ctx context.Context) error {

@@ -5,7 +5,7 @@ import (
 )
 
 type TokenPayload struct {
-	Subject   UserID `json:"id"`
+	Subject   int64  `json:"id"`
 	Username  string `json:"username"`
 	ExpiresAt time.Time
 }

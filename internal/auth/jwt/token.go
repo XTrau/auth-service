@@ -44,7 +44,7 @@ func (t *RS256Tokenizer) encode(payload domain.TokenPayload, tokenType string, e
 		Username: payload.Username,
 		Type:     tokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   payload.Subject.String(),
+			Subject:   strconv.FormatInt(payload.Subject, 10),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expire)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -134,7 +134,7 @@ func (t *RS256Tokenizer) Decode(tokenString string, tokenType string) (domain.To
 	}
 
 	result := domain.TokenPayload{
-		Subject:   domain.UserID(userID),
+		Subject:   userID,
 		Username:  claims.Username,
 		ExpiresAt: claims.ExpiresAt.Time,
 	}

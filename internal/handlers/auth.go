@@ -12,7 +12,6 @@ import (
 	"github.com/XTrau/auth-service/internal/domain"
 	"github.com/XTrau/auth-service/internal/dto"
 	errs "github.com/XTrau/auth-service/internal/errors"
-	"github.com/asaskevich/govalidator"
 )
 
 const (
@@ -22,11 +21,11 @@ const (
 
 // Интерфейс сервиса для аутентификации
 type AuthenticationService interface {
-	RegisterUser(ctx context.Context, username, password string) (user *domain.User, err error)
+	RegisterUser(ctx context.Context, username, password string) (user domain.User, err error)
 	LoginUser(ctx context.Context, username, password string) (pair domain.TokenPair, err error)
 	BlockRefreshToken(ctx context.Context, refreshToken string) error
 	RefreshTokens(ctx context.Context, refreshToken string) (pair domain.TokenPair, err error)
-	GetUser(ctx context.Context, accessToken string) (user *domain.User, err error)
+	GetUser(ctx context.Context, accessToken string) (user domain.User, err error)
 }
 
 type authenticationHandlers struct {
@@ -54,23 +53,20 @@ func (ah *authenticationHandlers) RegisterHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	if ok, err := govalidator.ValidateStruct(req); !ok || err != nil {
-		slog.Info("ошибка при валидации тела /register", slog.Any("username", req.Username), slog.String("error", err.Error()))
-		http.Error(w, errs.ErrInvalidRequestBody.Error(), http.StatusBadRequest)
-		return
-	}
-
 	user, err := ah.service.RegisterUser(r.Context(), req.Username, req.Password)
 
-	if errors.Is(err, errs.ErrUsernameAlreadyExists) {
-		slog.Info("попытка зарегистрировать существующего пользователя", slog.String("error", err.Error()))
-		http.Error(w, err.Error(), http.StatusConflict)
-		return
-	}
-
 	if err != nil {
-		slog.Error("ошибка при регистрации пользователя", slog.String("error", err.Error()))
-		http.Error(w, "Error on register user", http.StatusInternalServerError)
+		var validationErr errs.ValidationError
+
+		switch {
+		case errors.Is(err, errs.ErrUsernameAlreadyExists):
+			http.Error(w, err.Error(), http.StatusConflict)
+		case errors.As(err, &validationErr):
+			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		default:
+			slog.Error("неизвестная ошибка при регистрации пользователя", slog.String("error", err.Error()))
+			http.Error(w, "Error on register user", http.StatusInternalServerError)
+		}
 		return
 	}
 

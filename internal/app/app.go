@@ -55,12 +55,12 @@ func Run() error {
 	userRepository := repositories.NewPgUserRepository()
 	blockedTokensRepository := repositories.NewPgBlockedTokensRepository()
 
-	authorizationService := service.NewAuthenticationService(jwtTokenizer, argon2Hasher, unitOfWork, userRepository, blockedTokensRepository)
+	authenticationService := service.NewAuthenticationService(jwtTokenizer, argon2Hasher, unitOfWork, userRepository, blockedTokensRepository)
 
 	// Регистрация хендлеров
 	mux := http.NewServeMux()
 
-	authHandlers := handlers.NewAuthenticationHandlers(authorizationService)
+	authHandlers := handlers.NewAuthenticationHandlers(authenticationService)
 
 	handlers.RegisterHandlers(mux, authHandlers)
 

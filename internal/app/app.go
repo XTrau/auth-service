@@ -41,12 +41,6 @@ func Run() error {
 	}
 	defer db.Close()
 
-	// Миграции
-	if err := RunMigrations(db); err != nil {
-		return fmt.Errorf("Ошибка при загрузке миграций: %w", err)
-	}
-	slog.Info("Миграции загружены")
-
 	// Зависимости
 	jwtTokenizer := authjwt.NewRS256Tokenizer(cfg)
 	argon2Hasher := password.NewArgon2Hasher(password.Argon2DefaultParams())

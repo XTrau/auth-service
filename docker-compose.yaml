@@ -1,6 +1,6 @@
 services:
   auth-db:
-    image: postgres:16
+    image: postgres:18-alpine
     ports:
       - 5433:5432
     environment:
@@ -8,7 +8,7 @@ services:
       - POSTGRES_USER=auth
       - POSTGRES_PASSWORD=password
     volumes:
-      - auth-db-data:/var/lib/postgresql/data
+      - auth-db-data:/var/lib/postgresql
     healthcheck:
       test: [ "CMD", "pg_isready", "-U", "auth" ]
       start_period: 15s
@@ -16,8 +16,31 @@ services:
       timeout: 10s
       retries: 5
 
-  auth:
-    build: .
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint: ["./migrate"]
+    environment:
+      DB_HOST: auth-db
+      DB_PORT: 5432
+      DB_USER: auth
+      DB_PASS: password
+      DB_NAME: auth
+
+      PRIVATE_KEY_PATH: /run/secrets/private_key
+      PUBLIC_KEY_PATH: /run/secrets/public_key
+    secrets:
+      - private_key
+      - public_key
+    depends_on:
+      auth-db:
+        condition: service_healthy
+
+  auth-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile
     environment:
       DB_HOST: auth-db
       DB_PORT: 5432
@@ -33,14 +56,14 @@ services:
       - private_key
       - public_key
     depends_on:
-      auth-db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 secrets:
   private_key:
-    file: ./secrets/private.key
+    file: ./secrets_test/private.key
   public_key:
-    file: ./secrets/public.key
-  
+    file: ./secrets_test/public.key
+
 volumes:
   auth-db-data:

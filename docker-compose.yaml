@@ -51,7 +51,7 @@ services:
       PRIVATE_KEY_PATH: /run/secrets/private_key
       PUBLIC_KEY_PATH: /run/secrets/public_key
     ports:
-      - 8081:8080
+      - 8080:8080
     secrets:
       - private_key
       - public_key

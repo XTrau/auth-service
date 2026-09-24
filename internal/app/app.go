@@ -78,7 +78,10 @@ func Run() error {
 
 	// Запуск сервера
 	go func() {
-		slog.Info("Сервер запущен", slog.String("address", "http://localhost:8080"))
+		slog.Info("Сервер запущен",
+			slog.String("address", "http://localhost:8080"),
+			slog.String("docs_url", "http://localhost:8080/api/docs"),
+		)
 		if err := server.ListenAndServe(); err != nil {
 			slog.Error("Ошибка при работе сервера", slog.String("error", err.Error()))
 		}

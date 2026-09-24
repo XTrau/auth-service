@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o ./bin/app -a ./cmd/api
+RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o ./bin/app -a ./cmd/app
 RUN CGO_ENABLED=0 go build -ldflags "-s -w" -o ./bin/migrate -a ./cmd/migrate
 
 FROM alpine:3.20

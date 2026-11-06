@@ -4,13 +4,13 @@ import (
 	"log"
 	"log/slog"
 
-	"github.com/XTrau/auth-service/internal/app"
+	"github.com/XTrau/auth-service/internal/config"
 	"github.com/XTrau/auth-service/internal/database"
 )
 
 func main() {
 	// Конфиг
-	cfg, err := app.LoadConfig()
+	cfg, err := config.Load()
 	if err != nil {
 		log.Fatalf("Ошибка при загрузке конфига: %v", err.Error())
 	}
@@ -23,7 +23,7 @@ func main() {
 	defer db.Close()
 
 	// Миграции
-	if err := app.RunMigrations(db); err != nil {
+	if err := database.RunMigrations(db); err != nil {
 		log.Fatalf("Ошибка при загрузке миграций: %v", err.Error())
 	} else {
 		slog.Info("Миграции загружены")

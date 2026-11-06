@@ -1,4 +1,4 @@
-package app
+package config
 
 import (
 	"crypto/rsa"
@@ -53,7 +53,7 @@ func LoadRSAPublicKeyFromDisk(location string) *rsa.PublicKey {
 	return key
 }
 
-func LoadConfig() (*Config, error) {
+func Load() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		slog.Info(".env не найден, используются системные переменные окружения")
 	}

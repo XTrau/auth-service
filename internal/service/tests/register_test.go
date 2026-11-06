@@ -9,6 +9,7 @@ import (
 	"github.com/XTrau/auth-service/internal/service"
 )
 
+// Тесты регистрации пользователя
 func TestRegisterUserValidation(t *testing.T) {
 	testCases := []struct {
 		name          string
@@ -18,35 +19,42 @@ func TestRegisterUserValidation(t *testing.T) {
 		expectedError error
 	}{
 		{
-			"Регистрация нормального пользователя",
+			"Регистрация пользователя с правильным логином и правильным паролем",
 			"username",
 			"password",
 			"",
 			nil,
 		},
 		{
-			"Регистрация пользователя с коротким ником",
+			"Регистрация пользователя с правильным логином максимальной длины (64 символа) и правильным паролем максимальной длины (64 символа)",
+			"usernameusernameusernameusernameusernameusernameusernameusername",
+			"passwordpasswordpasswordpasswordpasswordpasswordpasswordpassword",
+			"",
+			nil,
+		},
+		{
+			"Регистрация пользователя с коротким ником и правильным паролем",
 			"user",
 			"password",
 			"username",
 			errs.ErrUsernameTooShort,
 		},
 		{
-			"Регистрация пользователя с слишком длинным ником (65 символов)",
+			"Регистрация пользователя с слишком длинным ником (65 символов) и правильным паролем",
 			"usernameusernameusernameusernameusernameusernameusernameusername1",
 			"password",
 			"username",
 			errs.ErrUsernameTooLong,
 		},
 		{
-			"Регистрация пользователя с коротким паролем",
+			"Регистрация пользователя с правильным ником и коротким паролем",
 			"username",
 			"pass",
 			"password",
 			errs.ErrPasswordTooShort,
 		},
 		{
-			"Регистрация пользователя с слишком длинным паролем (65 символов)",
+			"Регистрация пользователя с правильным ником и слишком длинным паролем (65 символов)",
 			"username",
 			"usernameusernameusernameusernameusernameusernameusernameusername1",
 			"password",

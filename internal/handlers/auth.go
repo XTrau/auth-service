@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/XTrau/auth-service/internal/domain"
-	"github.com/XTrau/auth-service/internal/dto"
 	errs "github.com/XTrau/auth-service/internal/errors"
+	"github.com/XTrau/auth-service/internal/handlers/dto"
 )
 
 const (
